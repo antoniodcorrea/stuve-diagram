@@ -8,6 +8,10 @@ Generates [Stüve diagrams](https://en.wikipedia.org/wiki/St%C3%BCve_diagram) fo
 pressure-level forecast. 
 Aimed at soaring flight planning.
 
+## Example
+
+![Stüve diagram](./examples/stuve-flugplatz-speck-fehraltorf-2026-06-06-0800LT.png)
+
 ## What it does
 
 For a given location, on each run it:
