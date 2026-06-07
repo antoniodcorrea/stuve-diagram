@@ -4,8 +4,10 @@
 SOUNDING_COLUMNS = ["pressure", "altitude", "temperature", "dew_point",
                     "wind_direction", "wind_speed"]
 
-# Local hours of the current day to render, skipping any already past at run time
-TARGET_HOURS_LOCAL = [8, 10, 12, 14, 16, 18, 20]
+# Local hour of the morning sounding to render. Picked before convection starts,
+# so the overnight inversion is intact and the Tmax dry adiabat gives a realistic
+# thermal top (the forecast-max-temperature method for soaring).
+TARGET_HOUR_LOCAL = 7
 
 # Geocoder (Nominatim)
 GEOCODER_URL = "https://nominatim.openstreetmap.org/search"
@@ -31,3 +33,5 @@ OPEN_METEO_VARIABLES = ["temperature", "relative_humidity", "geopotential_height
 # the surface are underground and must be dropped in favour of this real point
 OPEN_METEO_SURFACE_VARIABLES = ["surface_pressure", "temperature_2m", "dew_point_2m",
                                 "wind_speed_10m", "wind_direction_10m"]
+# Daily variables: the forecast maximum temperature feeds the Tmax parcel ascent
+OPEN_METEO_DAILY_VARIABLES = ["temperature_2m_max"]

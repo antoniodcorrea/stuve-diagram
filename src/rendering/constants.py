@@ -48,6 +48,22 @@ WIND_LABEL_OFFSET_POINTS = 8             # wind label this many points below the
 # used to place each label under the barb's true horizontal centre
 BARB_PATH_TO_POINTS = 3.1
 
+# Tmax convective parcel. Same plain black, thin format as the ground-level line.
+PARCEL_COLOR = "black"
+PARCEL_LINEWIDTH = 0.3
+PARCEL_GHOST_LINEWIDTH = 0.3            # dashed adiabat above the thermal top
+PARCEL_GHOST_ALPHA = 0.6
+PARCEL_LEVEL_LINEWIDTH = 0.3           # horizontal line marking thermal top / cloud base
+PARCEL_TICK_LINEWIDTH = 0.8            # width of the Tmax tick, matching the T-axis ticks
+PARCEL_TMAX_AXIS_OVERSHOOT = 0.012     # how far the tick pokes past the T axis
+                                       # (fraction of the pressure-axis span)
+PARCEL_TMAX_LABEL_RISE_POINTS = 11     # Tmax label gap above the T axis
+PARCEL_LABEL_FONT_SIZE = 6
+PARCEL_LABEL_OFFSET_POINTS = 6         # label this many points right of the marker
+PARCEL_LABEL_BOX_PAD = 0.12            # white label box margin (fraction of font
+                                       # size, ≈ 3 px at FIGURE_DPI = 300)
+PARCEL_LABEL_BOX_ALPHA = 0.8           # translucency of the white label box
+
 # Font sizes
 ALTITUDE_LABEL_FONT_SIZE = 6
 TICK_LABEL_FONT_SIZE = 7

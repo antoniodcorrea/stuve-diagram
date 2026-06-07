@@ -17,8 +17,9 @@ Aimed at soaring flight planning.
 For a given location, on each run it:
 
 - Geocodes the location name (Nominatim / OpenStreetMap) into coordinates.
-- Fetches the Open-Meteo GFS forecast (temperature, humidity, geopotential height and wind at every pressure level, plus the surface).
-- Renders one diagram per target hour (08, 10, 12, 14, 16, 18, 20 local time) of the chosen day — today by default, or tomorrow with `--tomorrow` — each with temperature and dew-point profiles, wind barbs (with speeds in kt and m/s), altitude scales in metres and feet, and the adiabat / mixing-ratio background.
+- Fetches the Open-Meteo GFS forecast (temperature, humidity, geopotential height and wind at every pressure level, plus the surface and the daily maximum temperature).
+- Renders the morning sounding (07 local time) of the chosen day — today by default, or tomorrow with `--tomorrow` — with temperature and dew-point profiles, wind barbs (with speeds in kt and m/s), altitude scales in metres and feet, and the adiabat / mixing-ratio background.
+- Overlays the Tmax parcel ascent: a dry adiabat lifted from the forecast maximum temperature and the parcel's mixing-ratio line, marking the thermal top (and the cloud base, when cumulus form) for soaring flight planning.
 
 Diagrams are written to `./output/` as `stuve-<location>-<date>-<HHMM>LT.png`.
 
@@ -52,8 +53,8 @@ output directory).
 
 Other domain constants:
 
-- `src/sounding/constants.py` — `TARGET_HOURS_LOCAL`, Open-Meteo model/levels, geocoder.
-- `src/rendering/constants.py` — styling (fonts, barbs, labels, title).
+- `src/sounding/constants.py` — `TARGET_HOUR_LOCAL`, Open-Meteo model/levels, geocoder.
+- `src/rendering/constants.py` — styling (fonts, barbs, labels, title, parcel).
 - `src/thermodynamics/constants.py` — physical constants and grid sampling.
 
 ## Project structure
@@ -63,14 +64,15 @@ src/
   stuve.py                Entry point: orchestrates the pipeline
   config/                 Shared diagram bounds, app configuration, font style
   sounding/               Data sources: geocode, fetch Open-Meteo, build sounding,
-                          select target hours
-  thermodynamics/         Pressure coordinate, dew point, adiabatic field grid
-  rendering/              Background, profiles, altitude labels, wind barbs,
+                          select the morning hour
+  thermodynamics/         Pressure coordinate, dew point, adiabatic field grid,
+                          Tmax parcel ascent
+  rendering/              Background, profiles, parcel, altitude labels, wind barbs,
                           axes, subtitle, and the diagram compositor
   helpers/                Cross-cutting utilities (e.g. filename-safe slugs)
 ```
 
-Pipeline: `geocode → fetch → select target hours → build sounding → render`
+Pipeline: `geocode → fetch → select morning hour → build sounding → parcel ascent → render`
 (the adiabatic field grid is computed inside the background drawing).
 
 ## Testing

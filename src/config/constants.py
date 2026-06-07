@@ -11,7 +11,7 @@ TEMPERATURE_MIN_CELSIUS, TEMPERATURE_MAX_CELSIUS = -95.0, 45.0
 
 # Figure rendering
 FIGURE_SIZE_INCHES = (9, 8)
-FIGURE_DPI = 150
+FIGURE_DPI = 300              # output resolution: pixels = FIGURE_SIZE_INCHES * this
 FIGURE_PAD_INCHES = 0.35       # margin around the saved figure (breathing room)
 
 # Output directory for the rendered diagrams

@@ -5,6 +5,7 @@ import urllib.parse
 import urllib.request
 
 from src.sounding.constants import (
+    OPEN_METEO_DAILY_VARIABLES,
     OPEN_METEO_FORECAST_DAYS,
     OPEN_METEO_MODEL,
     OPEN_METEO_PRESSURE_LEVELS_HPA,
@@ -27,6 +28,7 @@ def fetch_open_meteo(latitude, longitude):
         "latitude": latitude,
         "longitude": longitude,
         "hourly": ",".join(hourly_variables),
+        "daily": ",".join(OPEN_METEO_DAILY_VARIABLES),
         "models": OPEN_METEO_MODEL,
         "forecast_days": OPEN_METEO_FORECAST_DAYS,
         "wind_speed_unit": OPEN_METEO_WIND_SPEED_UNIT,

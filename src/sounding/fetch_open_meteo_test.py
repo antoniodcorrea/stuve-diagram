@@ -39,3 +39,11 @@ def test_request_pairs_each_variable_with_each_level(monkeypatch):
     query = urllib.parse.parse_qs(urllib.parse.urlparse(captured["url"]).query)
     assert "temperature_850hPa" in query["hourly"][0]
     assert "wind_direction_500hPa" in query["hourly"][0]
+
+
+def test_request_includes_the_daily_max_temperature(monkeypatch):
+    captured = {}
+    _patch_urlopen(monkeypatch, {}, captured)
+    fetch_open_meteo(40.0, -3.0)
+    query = urllib.parse.parse_qs(urllib.parse.urlparse(captured["url"]).query)
+    assert "temperature_2m_max" in query["daily"][0]
