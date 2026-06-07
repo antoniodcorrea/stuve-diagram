@@ -11,14 +11,14 @@ from src.rendering.draw_profile import draw_profile
 from src.rendering.draw_wind_barbs import draw_wind_barbs
 
 
-def render_diagram(sounding, parcel, subtitle, output_path):
+def render_diagram(sounding, parcel, subtitle, output_path, projection):
     figure, ax = plt.subplots(figsize=FIGURE_SIZE_INCHES)
-    draw_background(ax)
-    draw_profile(ax, sounding)
-    draw_parcel(ax, parcel, sounding)
-    draw_altitude_labels(ax, sounding)
-    draw_wind_barbs(ax, sounding)
-    configure_axes(ax, subtitle)
+    draw_background(ax, projection)
+    draw_profile(ax, sounding, projection)
+    draw_parcel(ax, parcel, sounding, projection)
+    draw_altitude_labels(ax, sounding, projection)
+    draw_wind_barbs(ax, sounding, projection)
+    configure_axes(ax, subtitle, projection)
     figure.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight",
                    pad_inches=FIGURE_PAD_INCHES)
     plt.close(figure)

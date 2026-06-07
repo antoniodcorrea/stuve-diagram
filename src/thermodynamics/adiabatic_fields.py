@@ -1,15 +1,16 @@
 """Compute the adiabatic and mixing-ratio fields over the background grid.
 
-The grid lives in (temperature, pressure**kappa) space, as in adiabats_plot.m.
+The grid lives in (temperature, pressure) space; the diagram projection maps it
+to plot coordinates, so the same fields serve both the Stüve and Skew-T diagrams.
 """
 
 import numpy as np
 
 from src.config.constants import (
+    GRID_TEMPERATURE_MIN_CELSIUS,
     PRESSURE_BOTTOM_HPA,
     PRESSURE_TOP_HPA,
     TEMPERATURE_MAX_CELSIUS,
-    TEMPERATURE_MIN_CELSIUS,
 )
 from src.thermodynamics.constants import (
     DRY_AIR_TO_WATER_VAPOUR_RATIO,
@@ -30,12 +31,12 @@ from src.thermodynamics.constants import (
 def compute_adiabatic_fields():
     """Return the background grid and the fields plotted as contours.
 
-    The returned dict carries the meshgrid (temperature, pressure_axis) plus the
+    The returned dict carries the (temperature, pressure) meshgrid plus the
     potential temperature, equivalent potential temperature, and saturation
     mixing ratio evaluated on it.
     """
     temperatures = np.arange(
-        TEMPERATURE_MIN_CELSIUS,
+        GRID_TEMPERATURE_MIN_CELSIUS,
         TEMPERATURE_MAX_CELSIUS + GRID_RANGE_EPSILON,
         GRID_TEMPERATURE_STEP_CELSIUS,
     )
@@ -44,10 +45,10 @@ def compute_adiabatic_fields():
         PRESSURE_BOTTOM_HPA + GRID_RANGE_EPSILON,
         GRID_PRESSURE_STEP_HPA,
     )
-    temperature, pressure_axis = np.meshgrid(temperatures, pressures ** KAPPA)
+    temperature, pressure = np.meshgrid(temperatures, pressures)
 
     temperature_kelvin = temperature + ZERO_CELSIUS_IN_KELVIN
-    potential_temperature = temperature_kelvin * (REFERENCE_PRESSURE_HPA ** KAPPA / pressure_axis)
+    potential_temperature = temperature_kelvin * (REFERENCE_PRESSURE_HPA / pressure) ** KAPPA
 
     saturation_vapour_pressure = SATURATION_VAPOUR_PRESSURE_BASE_HPA * np.exp(
         SATURATION_VAPOUR_PRESSURE_NUMERATOR_COEFF * temperature
@@ -55,7 +56,7 @@ def compute_adiabatic_fields():
     )
     saturation_mixing_ratio = (
         DRY_AIR_TO_WATER_VAPOUR_RATIO * saturation_vapour_pressure
-        / (pressure_axis ** (1.0 / KAPPA) - saturation_vapour_pressure)
+        / (pressure - saturation_vapour_pressure)
     )
     saturation_specific_humidity = saturation_mixing_ratio / (saturation_mixing_ratio + 1.0)
     equivalent_potential_temperature = potential_temperature * np.exp(
@@ -65,7 +66,7 @@ def compute_adiabatic_fields():
 
     return {
         "temperature": temperature,
-        "pressure_axis": pressure_axis,
+        "pressure": pressure,
         "potential_temperature": potential_temperature,
         "equivalent_potential_temperature": equivalent_potential_temperature,
         "saturation_mixing_ratio": saturation_mixing_ratio,

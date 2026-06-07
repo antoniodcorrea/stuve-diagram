@@ -8,7 +8,6 @@ components point where it blows toward.
 
 import numpy as np
 
-from src.config.constants import TEMPERATURE_MAX_CELSIUS
 from src.rendering.constants import (
     BARB_COLUMN_INSET_CELSIUS,
     BARB_LENGTH,
@@ -22,10 +21,9 @@ from src.rendering.constants import (
     WIND_LABEL_FONT_SIZE,
     WIND_LABEL_OFFSET_POINTS,
 )
-from src.thermodynamics.pressure_coordinate import pressure_to_axis
 
 
-def draw_wind_barbs(ax, sounding):
+def draw_wind_barbs(ax, sounding, projection):
     barb_levels = range(BARB_LEVEL_STEP_HPA, int(sounding.pressure.max()) + 1,
                         BARB_LEVEL_STEP_HPA)
     barb_indices = {(sounding.pressure - level).abs().idxmin() for level in barb_levels}
@@ -45,8 +43,8 @@ def draw_wind_barbs(ax, sounding):
     wind_speed = barb_levels_data.wind_speed.to_numpy()
     wind_u = -wind_speed * np.sin(direction_radians)
     wind_v = -wind_speed * np.cos(direction_radians)
-    barb_x = TEMPERATURE_MAX_CELSIUS - BARB_COLUMN_INSET_CELSIUS
-    barb_y = pressure_to_axis(barb_levels_data.pressure).to_numpy()
+    barb_x = projection.xlim[1] - BARB_COLUMN_INSET_CELSIUS
+    barb_y = projection.pressure_to_y(barb_levels_data.pressure.to_numpy())
 
     barbs = ax.barbs(np.full(len(barb_levels_data), barb_x), barb_y, wind_u, wind_v,
                      length=BARB_LENGTH, linewidth=BARB_LINEWIDTH, color="black", zorder=6)

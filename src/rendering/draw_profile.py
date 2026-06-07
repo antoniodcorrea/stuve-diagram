@@ -1,14 +1,14 @@
 """Draw the temperature and dew-point profiles plus the ground-level line."""
 
-from src.thermodynamics.pressure_coordinate import pressure_to_axis
 
-
-def draw_profile(ax, sounding):
-    ax.plot(sounding.temperature, pressure_to_axis(sounding.pressure),
+def draw_profile(ax, sounding, projection):
+    temperature_x, temperature_y = projection.to_xy(sounding.temperature, sounding.pressure)
+    ax.plot(temperature_x, temperature_y,
             color="black", lw=1.0, label="Temperature", zorder=5)
-    ax.plot(sounding.dew_point, pressure_to_axis(sounding.pressure),
+    dew_point_x, dew_point_y = projection.to_xy(sounding.dew_point, sounding.pressure)
+    ax.plot(dew_point_x, dew_point_y,
             color="black", lw=1.0, ls=":", label="Dew point", zorder=5)
 
     # Ground level: the highest measured pressure
     ground_pressure = sounding.pressure.max()
-    ax.axhline(pressure_to_axis(ground_pressure), color="black", lw=0.3, zorder=4)
+    ax.axhline(projection.pressure_to_y(ground_pressure), color="black", lw=0.3, zorder=4)

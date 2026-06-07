@@ -4,9 +4,10 @@
 
 # Stüve diagram
 
-Generates [Stüve diagrams](https://en.wikipedia.org/wiki/St%C3%BCve_diagram) for a given location using [Open-Meteo](https://open-meteo.com/)
-pressure-level forecast. 
-Aimed at soaring flight planning.
+Generates [Stüve](https://en.wikipedia.org/wiki/St%C3%BCve_diagram) and
+[Skew-T log-P](https://en.wikipedia.org/wiki/Skew-T_log-P_diagram) diagrams for a
+given location using the [Open-Meteo](https://open-meteo.com/) pressure-level
+forecast. Aimed at soaring flight planning.
 
 ## Example
 
@@ -20,8 +21,9 @@ For a given location, on each run it:
 - Fetches the Open-Meteo GFS forecast (temperature, humidity, geopotential height and wind at every pressure level, plus the surface and the daily maximum temperature).
 - Renders the morning sounding (07 local time) of the chosen day — today by default, or tomorrow with `--tomorrow` — with temperature and dew-point profiles, wind barbs (with speeds in kt and m/s), altitude scales in metres and feet, and the adiabat / mixing-ratio background.
 - Overlays the Tmax parcel ascent: a dry adiabat lifted from the forecast maximum temperature and the parcel's mixing-ratio line, marking the thermal top (and the cloud base, when cumulus form) for soaring flight planning.
+- Draws the same sounding as both a Stüve and a Skew-T log-P diagram, which differ only in the coordinate projection.
 
-Diagrams are written to `./output/` as `stuve-<location>-<date>-<HHMM>LT.png`.
+Diagrams are written to `./output/` as `<stuve|skewt>-<location>-<date>-<HHMM>LT.png`.
 
 ## Requirements
 
@@ -54,7 +56,7 @@ output directory).
 Other domain constants:
 
 - `src/sounding/constants.py` — `TARGET_HOUR_LOCAL`, Open-Meteo model/levels, geocoder.
-- `src/rendering/constants.py` — styling (fonts, barbs, labels, title, parcel).
+- `src/rendering/constants.py` — styling (fonts, barbs, labels, title, parcel) and the Skew-T skew/limits.
 - `src/thermodynamics/constants.py` — physical constants and grid sampling.
 
 ## Project structure
@@ -68,7 +70,8 @@ src/
   thermodynamics/         Pressure coordinate, dew point, adiabatic field grid,
                           Tmax parcel ascent
   rendering/              Background, profiles, parcel, altitude labels, wind barbs,
-                          axes, subtitle, and the diagram compositor
+                          axes, subtitle, the Stüve/Skew-T projections, and the
+                          diagram compositor
   helpers/                Cross-cutting utilities (e.g. filename-safe slugs)
 ```
 

@@ -8,6 +8,9 @@ Domain-specific constants live in each package's own constants module.
 # Plot bounds (same as the reference diagram); shared by rendering and the grid
 PRESSURE_BOTTOM_HPA, PRESSURE_TOP_HPA = 1020.0, 95.0
 TEMPERATURE_MIN_CELSIUS, TEMPERATURE_MAX_CELSIUS = -95.0, 45.0
+# The field/isotherm grid runs colder than the Stüve's left edge so the skewed
+# Skew-T isotherms and adiabats still fill its upper-left corner.
+GRID_TEMPERATURE_MIN_CELSIUS = -140.0
 
 # Figure rendering
 FIGURE_SIZE_INCHES = (9, 8)

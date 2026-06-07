@@ -7,6 +7,11 @@ GRAMS_PER_KILOGRAM = 1000.0
 
 BOX_ASPECT = 1174 / 1374            # height / width of the reference plot box
 
+# Skew-T log-P projection
+SKEWT_SKEW = 38.0                   # °C added per natural-log pressure unit (isotherm tilt)
+SKEWT_BOX_ASPECT = 1.0             # height / width of the Skew-T plot box
+SKEWT_XLIM = (-42.0, 38.0)         # temperature window (°C) at the bottom isobar
+
 # Potential-temperature contour levels (°C, relative to 0 °C in kelvin)
 THETA_LEVEL_MIN_CELSIUS = -30.0
 THETA_LEVEL_MAX_CELSIUS = 150.0
@@ -20,7 +25,9 @@ MIXING_RATIO_LEVELS_G_PER_KG = [0.01, 0.1, 0.2, 0.3, 1, 2, 4, 6, 8, 10, 12, 16,
 ISOBAR_STEP_HPA = 100
 ISOBAR_MIN_HPA = 100
 ISOBAR_MAX_HPA = 1000
-ISOTHERM_MIN_CELSIUS = -90
+# Runs colder than the Stüve's left edge so the skewed Skew-T isotherms fill its
+# upper-left corner; the extra cold lines fall outside the Stüve and are clipped.
+ISOTHERM_MIN_CELSIUS = -140
 ISOTHERM_MAX_CELSIUS = 50
 ISOTHERM_STEP_CELSIUS = 10
 
@@ -71,8 +78,7 @@ LEGEND_FONT_SIZE = 8
 # Legend upper-right corner (axes fraction), shifted left of the wind barb column
 LEGEND_ANCHOR = (0.86, 0.99)
 
-# Title: a heavy "STÜVE" heading over a lighter location/time subtitle
-DIAGRAM_NAME = "Stüve"
+# Title: a heavy diagram-name heading over a lighter location/time subtitle
 HEADING_FONT_SIZE = 17
 HEADING_FONT_WEIGHT = "extra bold"
 HEADING_OFFSET_POINTS = 36     # height of the heading above the axes top

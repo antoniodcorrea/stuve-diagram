@@ -18,7 +18,6 @@ from src.rendering.constants import (
     PARCEL_TMAX_AXIS_OVERSHOOT,
     PARCEL_TMAX_LABEL_RISE_POINTS,
 )
-from src.thermodynamics.pressure_coordinate import pressure_to_axis
 
 
 def _interp_at(pressure, pressures, values):
@@ -45,26 +44,31 @@ def _label(ax, x, y, label, place="right", gap=PARCEL_LABEL_OFFSET_POINTS):
                 zorder=7)
 
 
-def _mark_tmax(ax, parcel, label):
+def _mark_tmax(ax, parcel, label, projection):
     temperature = parcel["temperature"][0]
-    y_top = pressure_to_axis(parcel["pressures"][0])
-    y_axis = pressure_to_axis(PRESSURE_BOTTOM_HPA)
-    axis_span = y_axis - pressure_to_axis(PRESSURE_TOP_HPA)
+    y_top = projection.pressure_to_y(parcel["pressures"][0])
+    y_axis = projection.pressure_to_y(PRESSURE_BOTTOM_HPA)
+    axis_span = y_axis - projection.pressure_to_y(PRESSURE_TOP_HPA)
     y_bottom = y_axis + axis_span * PARCEL_TMAX_AXIS_OVERSHOOT
-    ax.plot([temperature, temperature], [y_top, y_bottom], color=PARCEL_COLOR,
+    x_top = projection.x_at(temperature, y_top)
+    x_axis = projection.x_at(temperature, y_axis)
+    # Thin continuation of the adiabat down the isotherm to the T axis.
+    ax.plot([x_top, x_axis], [y_top, y_axis], color=PARCEL_COLOR,
+            lw=PARCEL_LINEWIDTH, zorder=6)
+    # Thick vertical tick poking through the T axis at the Tmax value.
+    ax.plot([x_axis, x_axis], [y_axis, y_bottom], color=PARCEL_COLOR,
             lw=PARCEL_TICK_LINEWIDTH, clip_on=False, zorder=6)
-    _label(ax, temperature, y_axis, label, place="above",
-           gap=PARCEL_TMAX_LABEL_RISE_POINTS)
+    _label(ax, x_axis, y_axis, label, place="above", gap=PARCEL_TMAX_LABEL_RISE_POINTS)
 
 
-def _mark_line(ax, pressure, parcel, label):
+def _mark_line(ax, pressure, parcel, label, projection):
     temperature = _interp_at(pressure, parcel["pressures"], parcel["temperature"])
-    y = pressure_to_axis(pressure)
+    x, y = projection.to_xy(temperature, pressure)
     ax.axhline(y, color=PARCEL_COLOR, lw=PARCEL_LEVEL_LINEWIDTH, zorder=4)
-    _label(ax, temperature, y, label)
+    _label(ax, x, y, label)
 
 
-def draw_parcel(ax, parcel, sounding):
+def draw_parcel(ax, parcel, sounding, projection):
     pressures = parcel["pressures"]
     thermal_top = parcel["thermal_top_pressure"] or pressures[-1]
     cloud_base = parcel["cloud_base_pressure"]
@@ -74,26 +78,26 @@ def draw_parcel(ax, parcel, sounding):
 
     # Dry adiabat (Tmax parcel) from the surface up to the thermal top.
     adiabat = pressures >= thermal_top
-    ax.plot(parcel["temperature"][adiabat], pressure_to_axis(pressures[adiabat]),
+    ax.plot(*projection.to_xy(parcel["temperature"][adiabat], pressures[adiabat]),
             color=PARCEL_COLOR, lw=PARCEL_LINEWIDTH, label="Tmax parcel", zorder=6)
 
     # On a blue day the cloud base sits above the thermal top: ghost the adiabat
     # up to it (dashed) so it visibly meets the mixing-ratio line at the LCL.
     if blue_day and cloud_base is not None:
         ghost = (pressures <= thermal_top) & (pressures >= cloud_base)
-        ax.plot(parcel["temperature"][ghost], pressure_to_axis(pressures[ghost]),
+        ax.plot(*projection.to_xy(parcel["temperature"][ghost], pressures[ghost]),
                 color=PARCEL_COLOR, lw=PARCEL_GHOST_LINEWIDTH, ls="--",
                 alpha=PARCEL_GHOST_ALPHA, zorder=6)
 
     # Mixing-ratio line from the surface up to the cloud base (LCL).
     moisture = pressures >= (cloud_base or pressures[-1])
-    ax.plot(parcel["dew_point"][moisture], pressure_to_axis(pressures[moisture]),
+    ax.plot(*projection.to_xy(parcel["dew_point"][moisture], pressures[moisture]),
             color=PARCEL_COLOR, lw=PARCEL_LINEWIDTH, zorder=6)
 
-    _mark_tmax(ax, parcel, f"Tmax\n{parcel['temperature'][0]:.0f}°C")
+    _mark_tmax(ax, parcel, f"Tmax\n{parcel['temperature'][0]:.0f}°C", projection)
     _mark_line(ax, thermal_top, parcel,
-               f"Thermal top {_altitude_at(thermal_top, sounding):,.0f} m")
+               f"Thermal top {_altitude_at(thermal_top, sounding):,.0f} m", projection)
     # No cloud base on a blue day (it would sit above the thermal top).
     if cloud_base is not None and not blue_day:
         _mark_line(ax, cloud_base, parcel,
-                   f"Cloud base {_altitude_at(cloud_base, sounding):,.0f} m")
+                   f"Cloud base {_altitude_at(cloud_base, sounding):,.0f} m", projection)

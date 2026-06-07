@@ -18,6 +18,7 @@ from datetime import datetime, timedelta, timezone
 from src.config.constants import OUTPUT_DIR
 from src.config.matplotlib_style import apply_font_style
 from src.rendering.build_subtitle import build_subtitle
+from src.rendering.projection import PROJECTIONS
 from src.rendering.render_diagram import render_diagram
 from src.sounding.fetch_open_meteo import fetch_open_meteo
 from src.sounding.geocode import geocode
@@ -67,10 +68,12 @@ def main():
     date = forecast_time[:10]
     metar_time = forecast_time[11:16].replace(":", "")
     subtitle = build_subtitle(args.location, forecast_time, generated_at_local)
-    output_path = os.path.join(
-        OUTPUT_DIR, f"stuve-{location_slug}-{date}-{metar_time}LT.png")
-    render_diagram(sounding, parcel, subtitle, output_path)
-    print(f"Saved {output_path}")
+
+    for projection in PROJECTIONS:
+        output_path = os.path.join(
+            OUTPUT_DIR, f"{projection.slug}-{location_slug}-{date}-{metar_time}LT.png")
+        render_diagram(sounding, parcel, subtitle, output_path, projection)
+        print(f"Saved {output_path}")
 
 
 if __name__ == "__main__":

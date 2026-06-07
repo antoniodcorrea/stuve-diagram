@@ -27,7 +27,7 @@ def _patch_pipeline(monkeypatch):
 
 def test_runs_every_draw_step_on_the_axes(monkeypatch):
     calls, _figure, ax = _patch_pipeline(monkeypatch)
-    render_diagram(sounding="S", parcel="P", subtitle="T", output_path="out.png")
+    render_diagram(sounding="S", parcel="P", subtitle="T", output_path="out.png", projection="PROJ")
     step_names = [name for name, _ in calls if name != "close"]
     assert step_names == [
         "draw_background", "draw_profile", "draw_parcel",
@@ -38,7 +38,7 @@ def test_runs_every_draw_step_on_the_axes(monkeypatch):
 
 def test_passes_sounding_parcel_and_subtitle_through(monkeypatch):
     calls, _figure, _ax = _patch_pipeline(monkeypatch)
-    render_diagram(sounding="S", parcel="P", subtitle="T", output_path="out.png")
+    render_diagram(sounding="S", parcel="P", subtitle="T", output_path="out.png", projection="PROJ")
     by_step = dict(calls)
     assert by_step["draw_profile"][1] == "S"
     assert by_step["draw_parcel"][1] == "P"
@@ -47,7 +47,7 @@ def test_passes_sounding_parcel_and_subtitle_through(monkeypatch):
 
 def test_saves_to_the_output_path(monkeypatch):
     _calls, figure, _ax = _patch_pipeline(monkeypatch)
-    render_diagram(sounding="S", parcel="P", subtitle="T", output_path="out.png")
+    render_diagram(sounding="S", parcel="P", subtitle="T", output_path="out.png", projection="PROJ")
     assert len(figure.savefig_calls) == 1
     path, kwargs = figure.savefig_calls[0]
     assert path == "out.png"
@@ -56,5 +56,5 @@ def test_saves_to_the_output_path(monkeypatch):
 
 def test_closes_the_figure(monkeypatch):
     calls, figure, _ax = _patch_pipeline(monkeypatch)
-    render_diagram(sounding="S", parcel="P", subtitle="T", output_path="out.png")
+    render_diagram(sounding="S", parcel="P", subtitle="T", output_path="out.png", projection="PROJ")
     assert ("close", figure) in calls
