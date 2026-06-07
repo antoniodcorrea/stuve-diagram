@@ -7,8 +7,8 @@ GRAMS_PER_KILOGRAM = 1000.0
 
 BOX_ASPECT = 1174 / 1374            # height / width of the reference plot box
 
-# Skew-T log-P projection
-SKEWT_SKEW = 38.0                   # °C added per natural-log pressure unit (isotherm tilt)
+# Skew-T log-P projection. The skew itself is derived in projection.py so the
+# isotherms render at 45°; tune the look with the box aspect and the window here.
 SKEWT_BOX_ASPECT = 1.0             # height / width of the Skew-T plot box
 SKEWT_XLIM = (-42.0, 38.0)         # temperature window (°C) at the bottom isobar
 

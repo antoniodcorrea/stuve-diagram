@@ -1,7 +1,6 @@
 import numpy as np
 
-from src.rendering.constants import SKEWT_SKEW
-from src.rendering.projection import SkewTProjection, StuveProjection
+from src.rendering.projection import SKEWT_SKEW, SkewTProjection, StuveProjection
 from src.thermodynamics.constants import KAPPA, REFERENCE_PRESSURE_HPA
 
 

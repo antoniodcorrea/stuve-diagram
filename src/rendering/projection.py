@@ -7,6 +7,8 @@ step works through `to_xy`, so the same sounding, parcel and field code feeds
 both diagrams.
 """
 
+import math
+
 import numpy as np
 
 from src.config.constants import (
@@ -15,14 +17,14 @@ from src.config.constants import (
     TEMPERATURE_MAX_CELSIUS,
     TEMPERATURE_MIN_CELSIUS,
 )
-from src.rendering.constants import (
-    BOX_ASPECT,
-    SKEWT_BOX_ASPECT,
-    SKEWT_SKEW,
-    SKEWT_XLIM,
-)
+from src.rendering.constants import BOX_ASPECT, SKEWT_BOX_ASPECT, SKEWT_XLIM
 from src.thermodynamics.constants import REFERENCE_PRESSURE_HPA
 from src.thermodynamics.pressure_coordinate import pressure_to_axis
+
+# Skew chosen so the isotherms render at 45°. An isotherm's display slope is
+# box_aspect * (x-range / y-range) / skew, so 45° (slope 1) fixes the skew.
+SKEWT_SKEW = (SKEWT_BOX_ASPECT * (SKEWT_XLIM[1] - SKEWT_XLIM[0])
+              / math.log(PRESSURE_BOTTOM_HPA / PRESSURE_TOP_HPA))
 
 
 class _Projection:
