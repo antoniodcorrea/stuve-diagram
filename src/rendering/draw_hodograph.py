@@ -11,11 +11,14 @@ from matplotlib.patches import Circle
 
 from src.rendering.constants import (
     HODOGRAPH_BOUNDS,
+    HODOGRAPH_FINE_RING_MAX_KNOTS,
+    HODOGRAPH_FINE_RING_STEP_KNOTS,
     HODOGRAPH_FONT_SIZE,
     HODOGRAPH_LINEWIDTH,
     HODOGRAPH_RING_STEP_KNOTS,
     MS_TO_KNOTS,
 )
+from src.rendering.label_box import translucent_label_bbox
 
 HODOGRAPH_PRESSURE_FLOOR_HPA = 400.0
 
@@ -35,13 +38,15 @@ def draw_hodograph(ax, sounding):
         spine.set_visible(False)
     inset.patch.set_visible(False)   # no square background; a circle is added below
 
-    rings = max(HODOGRAPH_RING_STEP_KNOTS,
-                int(np.ceil(speed_knots.max() / HODOGRAPH_RING_STEP_KNOTS)
-                    * HODOGRAPH_RING_STEP_KNOTS))
+    # Finer rings (10 kt) for light/moderate winds, coarser (20 kt) for strong ones.
+    step = (HODOGRAPH_FINE_RING_STEP_KNOTS
+            if speed_knots.max() <= HODOGRAPH_FINE_RING_MAX_KNOTS
+            else HODOGRAPH_RING_STEP_KNOTS)
+    rings = max(step, int(np.ceil(speed_knots.max() / step) * step))
     # Circular translucent background, behind the rings and the wind curve.
     inset.add_patch(Circle((0, 0), rings, facecolor="white", edgecolor="none",
                            alpha=0.6, zorder=0))
-    for radius in range(HODOGRAPH_RING_STEP_KNOTS, rings + 1, HODOGRAPH_RING_STEP_KNOTS):
+    for radius in range(step, rings + 1, step):
         inset.add_patch(Circle((0, 0), radius, fill=False, edgecolor="gray",
                                linewidth=0.4, alpha=0.5))
         inset.annotate(f"{radius}", xy=(0, radius), fontsize=HODOGRAPH_FONT_SIZE,
@@ -54,4 +59,5 @@ def draw_hodograph(ax, sounding):
     limit = rings * 1.1
     inset.set_xlim(-limit, limit)
     inset.set_ylim(-limit, limit)
-    inset.set_title("Hodograph (kt)", fontsize=HODOGRAPH_FONT_SIZE, color="gray")
+    title = inset.set_title("Hodograph (kt)", fontsize=HODOGRAPH_FONT_SIZE, color="black")
+    title.set_bbox(translucent_label_bbox())

@@ -2,6 +2,7 @@
 the thermal top and cloud base they imply marked at their altitudes."""
 
 import numpy as np
+from matplotlib.transforms import blended_transform_factory
 
 from src.config.constants import PRESSURE_BOTTOM_HPA, PRESSURE_TOP_HPA
 from src.rendering.constants import (
@@ -10,13 +11,14 @@ from src.rendering.constants import (
     PARCEL_GHOST_ALPHA,
     PARCEL_GHOST_LINEWIDTH,
     PARCEL_LABEL_FONT_SIZE,
+    PARCEL_CLOUD_BASE_LABEL_GAP_POINTS,
     PARCEL_LABEL_OFFSET_POINTS,
-    PARCEL_LEVEL_LABEL_LEFT_GAP_POINTS,
     PARCEL_LEVEL_LINEWIDTH,
     PARCEL_LINEWIDTH,
     PARCEL_TICK_LINEWIDTH,
     PARCEL_TMAX_AXIS_OVERSHOOT,
     PARCEL_TMAX_LABEL_RISE_POINTS,
+    THERMAL_TOP_LABEL_RIGHT_GAP_POINTS,
 )
 from src.rendering.label_box import translucent_label_bbox
 
@@ -31,13 +33,21 @@ def _altitude_at(pressure, sounding):
 
 
 def _label(ax, x, y, label, place="right", gap=PARCEL_LABEL_OFFSET_POINTS):
-    offset, ha, va = {
-        "right": ((gap, 0), "left", "center"),
-        "left": ((-gap, 0), "right", "center"),
-        "below": ((0, -gap), "center", "top"),
-        "above": ((0, gap), "center", "bottom"),
-    }[place]
-    ax.annotate(label, xy=(x, y), xytext=offset, textcoords="offset points",
+    # "right_edge": pin the label `gap` points from the diagram's right edge, at the
+    # data y; x is taken from the axes (fraction 1.0), y from the data.
+    if place == "right_edge":
+        xy, xycoords, offset, ha, va = (
+            (1.0, y), blended_transform_factory(ax.transAxes, ax.transData),
+            (-gap, 0), "right", "center")
+    else:
+        xy, xycoords = (x, y), "data"
+        offset, ha, va = {
+            "right": ((gap, 0), "left", "center"),
+            "left": ((-gap, 0), "right", "center"),
+            "below": ((0, -gap), "center", "top"),
+            "above": ((0, gap), "center", "bottom"),
+        }[place]
+    ax.annotate(label, xy=xy, xycoords=xycoords, xytext=offset, textcoords="offset points",
                 color=PARCEL_COLOR, fontsize=PARCEL_LABEL_FONT_SIZE,
                 ha=ha, va=va, multialignment="center", annotation_clip=False,
                 bbox=translucent_label_bbox(), zorder=7)
@@ -62,9 +72,10 @@ def _mark_tmax(ax, parcel, label, projection):
 
 def _mark_line(ax, pressure, anchor_temperature, label, projection, place="right",
                gap=PARCEL_LABEL_OFFSET_POINTS):
-    x, y = projection.to_xy(anchor_temperature, pressure)
+    y = projection.pressure_to_y(pressure)
     ax.axhline(y, color=PARCEL_COLOR, lw=PARCEL_LEVEL_LINEWIDTH,
                ls=FREEZING_LEVEL_DASHES, zorder=4)
+    x = None if anchor_temperature is None else projection.x_at(anchor_temperature, y)
     _label(ax, x, y, label, place=place, gap=gap)
 
 
@@ -95,17 +106,17 @@ def draw_parcel(ax, parcel, sounding, projection):
             color=PARCEL_COLOR, lw=PARCEL_LINEWIDTH, zorder=6)
 
     _mark_tmax(ax, parcel, f"Tmax\n{parcel['temperature'][0]:.0f}°C", projection)
-    # Thermal top and cloud base labelled to the left of the sounding line
-    # (anchored on the environment temperature, not the warm-side parcel).
-    environment_temperature = _interp_at(
-        thermal_top, sounding.pressure.values, sounding.temperature.values)
-    _mark_line(ax, thermal_top, environment_temperature,
+    # Thermal top label pinned a fixed distance from the diagram's right edge; the
+    # cloud-base one stays anchored to the left of the sounding line.
+    _mark_line(ax, thermal_top, None,
                f"Thermal top {_altitude_at(thermal_top, sounding):,.0f} m", projection,
-               place="left", gap=PARCEL_LEVEL_LABEL_LEFT_GAP_POINTS)
-    # No cloud base on a blue day (it would sit above the thermal top).
+               place="right_edge", gap=THERMAL_TOP_LABEL_RIGHT_GAP_POINTS)
+    # No cloud base on a blue day (it would sit above the thermal top). Its label
+    # sits further left than the thermal-top one, so the two never overlap when the
+    # levels are close together.
     if cloud_base is not None and not blue_day:
         environment_temperature = _interp_at(
             cloud_base, sounding.pressure.values, sounding.temperature.values)
         _mark_line(ax, cloud_base, environment_temperature,
                    f"Cloud base {_altitude_at(cloud_base, sounding):,.0f} m", projection,
-                   place="left", gap=PARCEL_LEVEL_LABEL_LEFT_GAP_POINTS)
+                   place="left", gap=PARCEL_CLOUD_BASE_LABEL_GAP_POINTS)

@@ -10,8 +10,8 @@ BOX_ASPECT = 1174 / 1374            # height / width of the reference plot box
 # Skew-T log-P projection. The skew itself is derived in projection.py so the
 # isotherms render at 45°; tune the look with the box aspect and the window here.
 SKEWT_BOX_ASPECT = 1.0             # height / width of the Skew-T plot box
-SKEWT_XLIM = (-42.0, 52.0)         # temperature window (°C) at the bottom isobar,
-                                   # wide enough to show the 50 °C tick like the Stüve
+SKEWT_XLIM = (-42.0, 62.0)         # temperature window (°C) at the bottom isobar,
+                                   # wide enough to show the 60 °C tick like the Stüve
 
 # Potential-temperature contour levels (°C, relative to 0 °C in kelvin)
 THETA_LEVEL_MIN_CELSIUS = -30.0
@@ -29,7 +29,7 @@ ISOBAR_MAX_HPA = 1000
 # Runs colder than the Stüve's left edge so the skewed Skew-T isotherms fill its
 # upper-left corner; the extra cold lines fall outside the Stüve and are clipped.
 ISOTHERM_MIN_CELSIUS = -140
-ISOTHERM_MAX_CELSIUS = 60          # exclusive endpoint, so the 50° isotherm/tick is the last shown
+ISOTHERM_MAX_CELSIUS = 70          # exclusive endpoint, so the 60° isotherm/tick is the last shown
 ISOTHERM_STEP_CELSIUS = 10
 
 # Altitude labels
@@ -60,11 +60,12 @@ BARB_PATH_TO_POINTS = 3.1
 
 # Tmax convective parcel. Same plain black, thin format as the ground-level line.
 PARCEL_COLOR = "black"
-PARCEL_LINEWIDTH = 0.3
+PARCEL_LINEWIDTH = 0.6                  # thin but heavy enough to read as solid black
 PARCEL_GHOST_LINEWIDTH = 0.3            # dashed adiabat above the thermal top
 PARCEL_GHOST_ALPHA = 0.6
-PARCEL_LEVEL_LINEWIDTH = 0.3           # horizontal line marking thermal top / cloud base
-PARCEL_LEVEL_LABEL_LEFT_GAP_POINTS = 60  # thermal-top / cloud-base labels this far left of the sounding
+PARCEL_LEVEL_LINEWIDTH = 0.5           # horizontal line marking thermal top / cloud base (matches the 0 °C line)
+THERMAL_TOP_LABEL_RIGHT_GAP_POINTS = 50  # thermal-top label this far from the right edge
+PARCEL_CLOUD_BASE_LABEL_GAP_POINTS = 50  # cloud-base label this far left of the sounding
 PARCEL_TICK_LINEWIDTH = 0.8            # width of the Tmax tick, matching the T-axis ticks
 PARCEL_TMAX_AXIS_OVERSHOOT = 0.012     # how far the tick pokes past the T axis
                                        # (fraction of the pressure-axis span)
@@ -75,13 +76,16 @@ PARCEL_LABEL_BOX_PAD = 0.12            # vertical white-label-box margin (fracti
                                        # font size, ≈ 3 px at FIGURE_DPI = 300)
 LABEL_BOX_HORIZONTAL_PAD = 0.6         # wider horizontal margin for the same boxes
 LABEL_BOX_ROUNDING = 0.18              # corner radius (fraction of font size) ≈ a few px
-PARCEL_LABEL_BOX_ALPHA = 0.6           # translucency of the white label box
+PARCEL_LABEL_BOX_ALPHA = 0.8           # translucency of the white label box
+
+# Overlaid reference sounding (Tmax-hour temperature line), thinner than the profile
+OVERLAY_PROFILE_LINEWIDTH = 0.5
 
 # Derived levels drawn on the diagram (freezing level + cumulus moist adiabat)
-FREEZING_LEVEL_COLOR = "gray"
+FREEZING_LEVEL_COLOR = "black"
 FREEZING_LEVEL_LINEWIDTH = 0.5
 FREEZING_LEVEL_DASHES = (0, (5, 3))
-FREEZING_LEVEL_ALPHA = 0.8
+FREEZING_LEVEL_ALPHA = 1.0
 CLOUD_LINEWIDTH = 0.5                 # saturated adiabat from cloud base to cloud top
 LEVEL_LABEL_FONT_SIZE = 5.5
 LEVEL_LABEL_COLOR = "gray"
@@ -101,7 +105,7 @@ PANEL_LABEL_WIDTH = 13                # characters reserved for each label colum
 PANEL_VALUE_WIDTH = 10               # characters reserved for each value column
 PANEL_FONT_SIZE = 5.0
 PANEL_TITLE_FONT_SIZE = 6.0
-PANEL_BOX_ALPHA = 0.6
+PANEL_BOX_ALPHA = 0.8
 PANEL_BOX_PAD = 0.5
 PANEL_BOX_ROUNDING = 0.15            # small corner radius (≈ a few px), like the labels
 PANEL_LINESPACING = 1.35            # vertical spacing between rows
@@ -110,7 +114,9 @@ PANEL_SAMPLE_CHARS = 4              # width of a legend line sample, in characte
 # Hodograph: a small inset in the upper-right (wind tips joined, rings in knots),
 # left of the wind-barb column
 HODOGRAPH_BOUNDS = (0.70, 0.68, 0.28, 0.28)   # [x, y, w, h] in axes fraction
-HODOGRAPH_RING_STEP_KNOTS = 20
+HODOGRAPH_RING_STEP_KNOTS = 20        # ring spacing for strong winds
+HODOGRAPH_FINE_RING_STEP_KNOTS = 10   # finer ring spacing when the max speed is within...
+HODOGRAPH_FINE_RING_MAX_KNOTS = 40    # ...this many knots (otherwise the coarse step)
 HODOGRAPH_LINEWIDTH = 0.8
 HODOGRAPH_FONT_SIZE = 4.5
 

@@ -20,10 +20,10 @@ from src.config.matplotlib_style import apply_font_style
 from src.rendering.build_subtitle import build_subtitle
 from src.rendering.projection import PROJECTIONS
 from src.rendering.render_diagram import render_diagram
-from src.sounding.constants import TARGET_HOUR_CHOICES, TARGET_HOUR_LOCAL
 from src.sounding.fetch_open_meteo import fetch_open_meteo
 from src.sounding.geocode import geocode
 from src.sounding.select_target_hour import select_target_hour
+from src.sounding.select_tmax_hour import select_tmax_hour
 from src.helpers.slugify import slugify
 from src.sounding.sounding_from_forecast import sounding_from_forecast
 from src.thermodynamics.indices import compute_indices
@@ -40,10 +40,6 @@ def parse_args():
                      default=0, help="render today's diagram (default)")
     day.add_argument("--tomorrow", dest="day_offset", action="store_const", const=1,
                      help="render tomorrow's diagram")
-    parser.add_argument("--hour", type=int, choices=TARGET_HOUR_CHOICES,
-                        default=TARGET_HOUR_LOCAL, metavar="HH",
-                        help=f"local forecast hour (default {TARGET_HOUR_LOCAL:02d}); "
-                             f"one of {TARGET_HOUR_CHOICES}")
     return parser.parse_args()
 
 
@@ -55,7 +51,7 @@ def main():
     latitude, longitude = geocode(args.location)
     forecast = fetch_open_meteo(latitude, longitude)
     hourly = forecast["hourly"]
-    target = select_target_hour(hourly["time"], args.day_offset, args.hour)
+    target = select_target_hour(hourly["time"], args.day_offset)
 
     if target is None:
         print("Target hour not available for the requested day.")
@@ -78,6 +74,12 @@ def main():
         sounding, thermal_top)
     indices["bulk_shear"] = bulk_shear(sounding)
 
+    # Overlay the temperature line at the hour of Tmax (peak heating), unless that
+    # is the hour already being rendered.
+    tmax_index = select_tmax_hour(hourly["time"], hourly["temperature_2m"], args.day_offset)
+    overlay_sounding = (sounding_from_forecast(forecast, tmax_index)
+                        if tmax_index is not None and tmax_index != hour_index else None)
+
     date = forecast_time[:10]
     metar_time = forecast_time[11:16].replace(":", "")
     subtitle = build_subtitle(args.location, forecast_time, generated_at_local)
@@ -85,7 +87,8 @@ def main():
     for projection in PROJECTIONS:
         output_path = os.path.join(
             OUTPUT_DIR, f"{location_slug}-{date}-{metar_time}LT-{projection.slug}.png")
-        render_diagram(sounding, parcel, indices, subtitle, output_path, projection)
+        render_diagram(sounding, parcel, indices, overlay_sounding, subtitle,
+                       output_path, projection)
         print(f"Saved {output_path}")
 
 

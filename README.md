@@ -11,7 +11,9 @@ forecast. Aimed at soaring flight planning.
 
 ## Example
 
-![Stüve diagram](./examples/stuve-flugplatz-speck-fehraltorf-2026-06-06-0800LT.png)
+![Stüve diagram](./examples/flugplatz-speck-fehraltorf-2026-06-08-0700LT-stuve.png)
+
+![Skew-T log-P diagram](./examples/flugplatz-speck-fehraltorf-2026-06-08-0700LT-skewt.png)
 
 ## What it does
 
@@ -19,11 +21,12 @@ For a given location, on each run it:
 
 - Geocodes the location name (Nominatim / OpenStreetMap) into coordinates.
 - Fetches the Open-Meteo GFS forecast (temperature, humidity, geopotential height and wind at every pressure level, plus the surface and the daily maximum temperature).
-- Renders the morning sounding (07 local time) of the chosen day — today by default, or tomorrow with `--tomorrow` — with temperature and dew-point profiles, wind barbs (with speeds in kt and m/s), altitude scales in metres and feet, and the adiabat / mixing-ratio background.
-- Overlays the Tmax parcel ascent: a dry adiabat lifted from the forecast maximum temperature and the parcel's mixing-ratio line, marking the thermal top (and the cloud base, when cumulus form) for soaring flight planning.
+- Renders the morning sounding (07 local time) of the chosen day — today by default, or tomorrow with `--tomorrow` — with temperature and dew-point profiles, wind barbs, altitude scales in metres and feet, and the adiabat / mixing-ratio background.
+- Overlays the Tmax parcel ascent: a dry adiabat lifted from the forecast maximum temperature and the parcel's mixing-ratio line, marking the thermal top (and the cloud base, when cumulus form) for soaring flight planning. It also dashes in the temperature profile at the hour of Tmax, for comparison.
+- Adds a soaring analysis box (trigger temperature, working band, cloud base/top, thermal index, CAPE/CIN, lifted/Showalter/K/Total-Totals indices, freezing level, precipitable water, mean wind and shear), a wind hodograph, and shades the CAPE area; the freezing level and equilibrium/free-convection levels are marked too.
 - Draws the same sounding as both a Stüve and a Skew-T log-P diagram, which differ only in the coordinate projection.
 
-Diagrams are written to `./output/` as `<stuve|skewt>-<location>-<date>-<HHMM>LT.png`.
+Diagrams are written to `./output/` as `<location>-<date>-<HHMM>LT-<stuve|skewt>.png`.
 
 ## Requirements
 

@@ -11,6 +11,7 @@ from matplotlib.lines import Line2D
 
 from src.rendering.constants import (
     MS_TO_KNOTS,
+    OVERLAY_PROFILE_LINEWIDTH,
     PANEL_ANCHOR,
     PANEL_BOX_ALPHA,
     PANEL_BOX_PAD,
@@ -74,10 +75,12 @@ def _panel_rows(indices):
     ]
 
 
-def draw_indices_panel(ax, indices):
+def draw_indices_panel(ax, indices, show_overlay=False):
     # Whole box is left-aligned monospace text; the series rows leave the value
     # column blank for the line samples drawn over them.
-    rows = (["LEYEND"] + [name for name, _ in _SERIES] + [""] + _panel_rows(indices))
+    series = _SERIES + ([("Tmax temp.", {"ls": "--", "lw": OVERLAY_PROFILE_LINEWIDTH})]
+                        if show_overlay else [])
+    rows = (["LEYEND"] + [name for name, _ in series] + [""] + _panel_rows(indices))
     text = ax.text(
         *PANEL_ANCHOR, "\n".join(rows), transform=ax.transAxes, ha="left", va="top",
         family="monospace", fontsize=PANEL_FONT_SIZE, linespacing=PANEL_LINESPACING, zorder=8,
@@ -91,7 +94,7 @@ def draw_indices_panel(ax, indices):
     row_height = box.height / len(rows)
     char_width = box.width / max(len(row) for row in rows)
     to_axes = ax.transAxes.inverted()
-    for index, (_name, style) in enumerate(_SERIES, start=1):
+    for index, (_name, style) in enumerate(series, start=1):
         y = box.y1 - (index + 0.5) * row_height
         (x_left, y_axes), (x_right, _) = to_axes.transform(
             [(box.x1 - PANEL_SAMPLE_CHARS * char_width, y), (box.x1, y)])
