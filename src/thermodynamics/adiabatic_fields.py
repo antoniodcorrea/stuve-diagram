@@ -54,10 +54,17 @@ def compute_adiabatic_fields():
         SATURATION_VAPOUR_PRESSURE_NUMERATOR_COEFF * temperature
         / (temperature + SATURATION_VAPOUR_PRESSURE_DENOMINATOR_OFFSET_CELSIUS)
     )
-    saturation_mixing_ratio = (
-        DRY_AIR_TO_WATER_VAPOUR_RATIO * saturation_vapour_pressure
-        / (pressure - saturation_vapour_pressure)
-    )
+    # In the warm, low-pressure corner the saturation vapour pressure exceeds the
+    # total pressure: an unphysical region where the mixing ratio would go negative.
+    # Mask it (NaN) so the contour algorithm doesn't draw a spurious band across the
+    # +inf/-inf jump at the boundary.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        saturation_mixing_ratio = np.where(
+            pressure > saturation_vapour_pressure,
+            DRY_AIR_TO_WATER_VAPOUR_RATIO * saturation_vapour_pressure
+            / (pressure - saturation_vapour_pressure),
+            np.nan,
+        )
     saturation_specific_humidity = saturation_mixing_ratio / (saturation_mixing_ratio + 1.0)
     equivalent_potential_temperature = potential_temperature * np.exp(
         LATENT_HEAT_VAPORISATION * saturation_specific_humidity

@@ -4,8 +4,12 @@
 KAPPA = 0.2854                      # R/cp for dry air
 LATENT_HEAT_VAPORISATION = 2.501e6  # latent heat of vaporisation [J/kg]
 SPECIFIC_HEAT_DRY_AIR = 1005.7      # specific heat of dry air at constant pressure [J/(kg K)]
+GAS_CONSTANT_DRY_AIR = 287.04       # specific gas constant for dry air [J/(kg K)] (= KAPPA * cp)
+GRAVITY = 9.80665                   # standard gravity [m/s^2]
+WATER_DENSITY = 1000.0              # liquid water density [kg/m^3]
 ZERO_CELSIUS_IN_KELVIN = 273.16     # 0 °C in kelvin
 REFERENCE_PRESSURE_HPA = 1000.0     # reference pressure [hPa]
+HPA_TO_PASCAL = 100.0               # hPa -> Pa
 
 # Bolton (1980) saturation vapour pressure coefficients
 SATURATION_VAPOUR_PRESSURE_BASE_HPA = 6.112

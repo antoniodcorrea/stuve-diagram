@@ -5,19 +5,20 @@ import numpy as np
 
 from src.config.constants import PRESSURE_BOTTOM_HPA, PRESSURE_TOP_HPA
 from src.rendering.constants import (
+    FREEZING_LEVEL_DASHES,
     PARCEL_COLOR,
     PARCEL_GHOST_ALPHA,
     PARCEL_GHOST_LINEWIDTH,
-    PARCEL_LABEL_BOX_ALPHA,
-    PARCEL_LABEL_BOX_PAD,
     PARCEL_LABEL_FONT_SIZE,
     PARCEL_LABEL_OFFSET_POINTS,
+    PARCEL_LEVEL_LABEL_LEFT_GAP_POINTS,
     PARCEL_LEVEL_LINEWIDTH,
     PARCEL_LINEWIDTH,
     PARCEL_TICK_LINEWIDTH,
     PARCEL_TMAX_AXIS_OVERSHOOT,
     PARCEL_TMAX_LABEL_RISE_POINTS,
 )
+from src.rendering.label_box import translucent_label_bbox
 
 
 def _interp_at(pressure, pressures, values):
@@ -32,16 +33,14 @@ def _altitude_at(pressure, sounding):
 def _label(ax, x, y, label, place="right", gap=PARCEL_LABEL_OFFSET_POINTS):
     offset, ha, va = {
         "right": ((gap, 0), "left", "center"),
+        "left": ((-gap, 0), "right", "center"),
         "below": ((0, -gap), "center", "top"),
         "above": ((0, gap), "center", "bottom"),
     }[place]
     ax.annotate(label, xy=(x, y), xytext=offset, textcoords="offset points",
                 color=PARCEL_COLOR, fontsize=PARCEL_LABEL_FONT_SIZE,
                 ha=ha, va=va, multialignment="center", annotation_clip=False,
-                bbox=dict(boxstyle=f"square,pad={PARCEL_LABEL_BOX_PAD}",
-                          facecolor="white", edgecolor="none",
-                          alpha=PARCEL_LABEL_BOX_ALPHA),
-                zorder=7)
+                bbox=translucent_label_bbox(), zorder=7)
 
 
 def _mark_tmax(ax, parcel, label, projection):
@@ -61,11 +60,12 @@ def _mark_tmax(ax, parcel, label, projection):
     _label(ax, x_axis, y_axis, label, place="above", gap=PARCEL_TMAX_LABEL_RISE_POINTS)
 
 
-def _mark_line(ax, pressure, parcel, label, projection):
-    temperature = _interp_at(pressure, parcel["pressures"], parcel["temperature"])
-    x, y = projection.to_xy(temperature, pressure)
-    ax.axhline(y, color=PARCEL_COLOR, lw=PARCEL_LEVEL_LINEWIDTH, zorder=4)
-    _label(ax, x, y, label)
+def _mark_line(ax, pressure, anchor_temperature, label, projection, place="right",
+               gap=PARCEL_LABEL_OFFSET_POINTS):
+    x, y = projection.to_xy(anchor_temperature, pressure)
+    ax.axhline(y, color=PARCEL_COLOR, lw=PARCEL_LEVEL_LINEWIDTH,
+               ls=FREEZING_LEVEL_DASHES, zorder=4)
+    _label(ax, x, y, label, place=place, gap=gap)
 
 
 def draw_parcel(ax, parcel, sounding, projection):
@@ -95,9 +95,17 @@ def draw_parcel(ax, parcel, sounding, projection):
             color=PARCEL_COLOR, lw=PARCEL_LINEWIDTH, zorder=6)
 
     _mark_tmax(ax, parcel, f"Tmax\n{parcel['temperature'][0]:.0f}°C", projection)
-    _mark_line(ax, thermal_top, parcel,
-               f"Thermal top {_altitude_at(thermal_top, sounding):,.0f} m", projection)
+    # Thermal top and cloud base labelled to the left of the sounding line
+    # (anchored on the environment temperature, not the warm-side parcel).
+    environment_temperature = _interp_at(
+        thermal_top, sounding.pressure.values, sounding.temperature.values)
+    _mark_line(ax, thermal_top, environment_temperature,
+               f"Thermal top {_altitude_at(thermal_top, sounding):,.0f} m", projection,
+               place="left", gap=PARCEL_LEVEL_LABEL_LEFT_GAP_POINTS)
     # No cloud base on a blue day (it would sit above the thermal top).
     if cloud_base is not None and not blue_day:
-        _mark_line(ax, cloud_base, parcel,
-                   f"Cloud base {_altitude_at(cloud_base, sounding):,.0f} m", projection)
+        environment_temperature = _interp_at(
+            cloud_base, sounding.pressure.values, sounding.temperature.values)
+        _mark_line(ax, cloud_base, environment_temperature,
+                   f"Cloud base {_altitude_at(cloud_base, sounding):,.0f} m", projection,
+                   place="left", gap=PARCEL_LEVEL_LABEL_LEFT_GAP_POINTS)

@@ -7,6 +7,7 @@ components point where it blows toward.
 """
 
 import numpy as np
+from matplotlib.transforms import offset_copy
 
 from src.rendering.constants import (
     BARB_COLUMN_INSET_CELSIUS,
@@ -17,9 +18,6 @@ from src.rendering.constants import (
     LOWEST_BARB_MAX_GAP_HPA,
     MIN_BARB_GAP_HPA,
     MS_TO_KNOTS,
-    WIND_LABEL_COLOR,
-    WIND_LABEL_FONT_SIZE,
-    WIND_LABEL_OFFSET_POINTS,
 )
 
 
@@ -41,20 +39,26 @@ def draw_wind_barbs(ax, sounding, projection):
     barb_levels_data = sounding.loc[sorted(barb_indices)]
     direction_radians = np.deg2rad(barb_levels_data.wind_direction.to_numpy())
     wind_speed = barb_levels_data.wind_speed.to_numpy()
-    wind_u = -wind_speed * np.sin(direction_radians)
-    wind_v = -wind_speed * np.cos(direction_radians)
+    # Barbs follow the meteorological convention (half = 5, full = 10, pennant =
+    # 50 knots), so the components must be in knots, not the m/s of the source.
+    wind_speed_knots = wind_speed * MS_TO_KNOTS
+    wind_u = -wind_speed_knots * np.sin(direction_radians)
+    wind_v = -wind_speed_knots * np.cos(direction_radians)
     barb_x = projection.xlim[1] - BARB_COLUMN_INSET_CELSIUS
     barb_y = projection.pressure_to_y(barb_levels_data.pressure.to_numpy())
 
-    barbs = ax.barbs(np.full(len(barb_levels_data), barb_x), barb_y, wind_u, wind_v,
-                     length=BARB_LENGTH, linewidth=BARB_LINEWIDTH, color="black", zorder=6)
-
-    # The barb body sits off to one side of its anchor; center each label under the
-    # barb's true horizontal centre (path centre scaled to rendered display points).
-    for barb_path, y_value, speed in zip(barbs.get_paths(), barb_y, wind_speed):
-        path_center = (barb_path.vertices[:, 0].min() + barb_path.vertices[:, 0].max()) / 2
-        label = f"{int(round(speed * MS_TO_KNOTS))} kts. / {int(round(speed))} ms."
-        ax.annotate(label, xy=(barb_x, y_value),
-                    xytext=(path_center * BARB_PATH_TO_POINTS, -WIND_LABEL_OFFSET_POINTS),
-                    textcoords="offset points", ha="center", va="top",
-                    color=WIND_LABEL_COLOR, fontsize=WIND_LABEL_FONT_SIZE, zorder=6)
+    # Centre each barb on the column and anchor it by the bottom of its staff. The
+    # glyph (staff plus feathers) sits off to one side of and below its anchor, so
+    # measure its drawn shape and offset it to put its horizontal centre on the
+    # column and its lowest point on the level line.
+    for x, y_value, u, v in zip(np.full(len(barb_y), barb_x), barb_y, wind_u, wind_v):
+        barb = ax.barbs(x, y_value, u, v, length=BARB_LENGTH, linewidth=BARB_LINEWIDTH,
+                        color="black", zorder=6)
+        vertices = barb.get_paths()[0].vertices
+        x_offset = -(vertices[:, 0].min() + vertices[:, 0].max()) / 2 * BARB_PATH_TO_POINTS
+        lift = max(0.0, -vertices[:, 1].min()) * BARB_PATH_TO_POINTS
+        barb.remove()
+        ax.barbs(x, y_value, u, v, length=BARB_LENGTH, linewidth=BARB_LINEWIDTH,
+                 color="black", zorder=6,
+                 transform=offset_copy(ax.transData, fig=ax.figure, x=x_offset, y=lift,
+                                       units="points"))

@@ -8,8 +8,6 @@ from src.rendering.constants import (
     ISOTHERM_MAX_CELSIUS,
     ISOTHERM_MIN_CELSIUS,
     ISOTHERM_STEP_CELSIUS,
-    LEGEND_ANCHOR,
-    LEGEND_FONT_SIZE,
     SUBTITLE_FONT_SIZE,
     SUBTITLE_PAD,
     TICK_LABEL_FONT_SIZE,
@@ -37,5 +35,3 @@ def configure_axes(ax, subtitle, projection):
                 xytext=(0, HEADING_OFFSET_POINTS), textcoords="offset points",
                 ha="center", va="bottom", fontsize=HEADING_FONT_SIZE,
                 fontweight=HEADING_FONT_WEIGHT)
-    ax.legend(loc="upper right", bbox_to_anchor=LEGEND_ANCHOR,
-              fontsize=LEGEND_FONT_SIZE)

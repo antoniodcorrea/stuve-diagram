@@ -8,11 +8,13 @@ from src.rendering.constants import (
     ALTITUDE_FEET_OFFSET_CELSIUS,
     ALTITUDE_LABEL_FONT_SIZE,
     ALTITUDE_LABEL_LEFT_OFFSET_CELSIUS,
+    ALTITUDE_LABEL_MIN_GAP_METRES,
     ALTITUDE_LABEL_STEP_FEET,
     ALTITUDE_LABEL_STEP_METRES,
     ALTITUDE_LABEL_TOP_MARGIN_HPA,
     METRES_TO_FEET,
 )
+from src.rendering.label_box import translucent_label_bbox
 
 
 def _annotate(ax, altitude_metres, sounding, projection, text, label_x, va="center"):
@@ -20,7 +22,8 @@ def _annotate(ax, altitude_metres, sounding, projection, text, label_x, va="cent
     if pressure < PRESSURE_TOP_HPA + ALTITUDE_LABEL_TOP_MARGIN_HPA:
         return
     ax.annotate(text, xy=(label_x, projection.pressure_to_y(pressure)),
-                fontsize=ALTITUDE_LABEL_FONT_SIZE, color="gray", va=va)
+                fontsize=ALTITUDE_LABEL_FONT_SIZE, color="gray", va=va,
+                bbox=translucent_label_bbox())
 
 
 def _first_above(ground, step):
@@ -41,10 +44,13 @@ def draw_altitude_labels(ax, sounding, projection):
     _annotate(ax, ground_metres, sounding, projection, f"{ground_feet:,.0f} ft.",
               feet_x, va="bottom")
 
-    # Round steps above the ground (anything at or below it is underground).
+    # Round steps above the ground (anything at or below it is underground); skip
+    # the first if it sits within the minimum gap of the ground label.
     highest_metres = int(sounding.altitude.max())
     for altitude in range(_first_above(ground_metres, ALTITUDE_LABEL_STEP_METRES),
                           highest_metres + 1, ALTITUDE_LABEL_STEP_METRES):
+        if altitude - ground_metres < ALTITUDE_LABEL_MIN_GAP_METRES:
+            continue
         _annotate(ax, altitude, sounding, projection, f"{altitude:,.0f} m.", metres_x)
 
     highest_feet = int(highest_metres * METRES_TO_FEET)

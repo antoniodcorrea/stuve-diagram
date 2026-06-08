@@ -25,7 +25,9 @@ from src.sounding.geocode import geocode
 from src.sounding.select_target_hour import select_target_hour
 from src.helpers.slugify import slugify
 from src.sounding.sounding_from_forecast import sounding_from_forecast
+from src.thermodynamics.indices import compute_indices
 from src.thermodynamics.parcel import parcel_ascent
+from src.thermodynamics.wind import bulk_shear, mean_layer_wind
 
 
 def parse_args():
@@ -65,14 +67,20 @@ def main():
     parcel = parcel_ascent(surface.pressure, max_temperature, surface.dew_point,
                            sounding.pressure.values, sounding.temperature.values)
 
+    indices = compute_indices(sounding, parcel, max_temperature)
+    thermal_top = parcel["thermal_top_pressure"] or sounding.pressure.min()
+    indices["mean_wind_direction"], indices["mean_wind_speed"] = mean_layer_wind(
+        sounding, thermal_top)
+    indices["bulk_shear"] = bulk_shear(sounding)
+
     date = forecast_time[:10]
     metar_time = forecast_time[11:16].replace(":", "")
     subtitle = build_subtitle(args.location, forecast_time, generated_at_local)
 
     for projection in PROJECTIONS:
         output_path = os.path.join(
-            OUTPUT_DIR, f"{projection.slug}-{location_slug}-{date}-{metar_time}LT.png")
-        render_diagram(sounding, parcel, subtitle, output_path, projection)
+            OUTPUT_DIR, f"{location_slug}-{projection.slug}-{date}-{metar_time}LT.png")
+        render_diagram(sounding, parcel, indices, subtitle, output_path, projection)
         print(f"Saved {output_path}")
 
 
