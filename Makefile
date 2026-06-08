@@ -5,11 +5,12 @@ guard-location:
 		exit 1; \
 	fi
 
+# Optional: HOUR=14 (one of 06 08 10 12 14 16 18 20 22; default 08)
 today: guard-location
-	python -m src.stuve --today --location "$(LOCATION)"
+	python -m src.stuve --today --location "$(LOCATION)" $(if $(HOUR),--hour $(HOUR))
 
 tomorrow: guard-location
-	python -m src.stuve --tomorrow --location "$(LOCATION)"
+	python -m src.stuve --tomorrow --location "$(LOCATION)" $(if $(HOUR),--hour $(HOUR))
 
 test:
 	python -m pytest

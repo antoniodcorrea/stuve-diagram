@@ -33,14 +33,14 @@ def draw_hodograph(ax, sounding):
     inset.set_yticks([])
     for spine in inset.spines.values():
         spine.set_visible(False)
-    # Opaque-ish background so the temperature profile behind it (the cold tip in
-    # the Stüve's upper-left) does not show through and muddle the wind curve.
-    inset.patch.set_facecolor("white")
-    inset.patch.set_alpha(0.6)
+    inset.patch.set_visible(False)   # no square background; a circle is added below
 
     rings = max(HODOGRAPH_RING_STEP_KNOTS,
                 int(np.ceil(speed_knots.max() / HODOGRAPH_RING_STEP_KNOTS)
                     * HODOGRAPH_RING_STEP_KNOTS))
+    # Circular translucent background, behind the rings and the wind curve.
+    inset.add_patch(Circle((0, 0), rings, facecolor="white", edgecolor="none",
+                           alpha=0.6, zorder=0))
     for radius in range(HODOGRAPH_RING_STEP_KNOTS, rings + 1, HODOGRAPH_RING_STEP_KNOTS):
         inset.add_patch(Circle((0, 0), radius, fill=False, edgecolor="gray",
                                linewidth=0.4, alpha=0.5))

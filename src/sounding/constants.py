@@ -6,8 +6,10 @@ SOUNDING_COLUMNS = ["pressure", "altitude", "temperature", "dew_point",
 
 # Local hour of the morning sounding to render. Picked before convection starts,
 # so the overnight inversion is intact and the Tmax dry adiabat gives a realistic
-# thermal top (the forecast-max-temperature method for soaring).
-TARGET_HOUR_LOCAL = 7
+# thermal top (the forecast-max-temperature method for soaring). Overridable on the
+# command line with one of TARGET_HOUR_CHOICES.
+TARGET_HOUR_LOCAL = 8
+TARGET_HOUR_CHOICES = [6, 8, 10, 12, 14, 16, 18, 20, 22]
 
 # Geocoder (Nominatim)
 GEOCODER_URL = "https://nominatim.openstreetmap.org/search"

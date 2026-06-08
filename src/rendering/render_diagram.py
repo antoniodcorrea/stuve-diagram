@@ -25,8 +25,10 @@ def render_diagram(sounding, parcel, indices, subtitle, output_path, projection)
     draw_altitude_labels(ax, sounding, projection)
     draw_wind_barbs(ax, sounding, projection)
     draw_hodograph(ax, sounding)
-    draw_indices_panel(ax, indices)
     configure_axes(ax, subtitle, projection)
+    # After configure_axes: the panel measures its laid-out text to place the
+    # legend line samples, so the axes box must be final first.
+    draw_indices_panel(ax, indices)
     figure.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight",
                    pad_inches=FIGURE_PAD_INCHES)
     plt.close(figure)

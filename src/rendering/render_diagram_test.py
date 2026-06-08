@@ -38,7 +38,7 @@ def test_runs_every_draw_step_on_the_axes(monkeypatch):
     assert step_names == [
         "draw_background", "draw_profile", "draw_parcel", "draw_cape",
         "draw_levels", "draw_altitude_labels", "draw_wind_barbs",
-        "draw_hodograph", "draw_indices_panel", "configure_axes"]
+        "draw_hodograph", "configure_axes", "draw_indices_panel"]
     # Every step draws on the same axes returned by plt.subplots.
     assert all(args[0] is ax for name, args in calls if name != "close")
 

@@ -96,7 +96,7 @@ CAPE_FILL = (0.4, 0.4, 0.4, 0.1)
 
 # Soaring-indices panel: a small monospace text box in the lower-left (the cold,
 # empty high-pressure corner), clear of the altitude labels at the very edge.
-PANEL_ANCHOR = (0.21, 0.99)           # axes-fraction upper-left corner, right of the altitudes
+PANEL_ANCHOR = (0.21, 0.942)          # upper-left corner; top aligned with the hodograph circle
 PANEL_LABEL_WIDTH = 13                # characters reserved for each label column
 PANEL_VALUE_WIDTH = 10               # characters reserved for each value column
 PANEL_FONT_SIZE = 5.0
@@ -104,10 +104,8 @@ PANEL_TITLE_FONT_SIZE = 6.0
 PANEL_BOX_ALPHA = 0.6
 PANEL_BOX_PAD = 0.5
 PANEL_BOX_ROUNDING = 0.15            # small corner radius (≈ a few px), like the labels
-PANEL_LABEL_SPACING = 0.25           # vertical spacing between rows (legend labelspacing)
-PANEL_HANDLE_LENGTH = 1.6            # length of the legend line samples
-PANEL_HANDLE_TEXT_PAD = 0.5          # gap between a line sample and its text
-PANEL_BORDER_PAD = 0.8              # box inner margin
+PANEL_LINESPACING = 1.35            # vertical spacing between rows
+PANEL_SAMPLE_CHARS = 4              # width of a legend line sample, in characters
 
 # Hodograph: a small inset in the upper-right (wind tips joined, rings in knots),
 # left of the wind-barb column

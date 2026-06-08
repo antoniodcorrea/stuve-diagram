@@ -1,9 +1,9 @@
 """Draw the combined legend + soaring-indices panel: one monospace box, upper
-right (left of the wind-barb column).
+left (right of the altitude labels).
 
-The series legend (Temperature, Dew point, Tmax parcel) sits on top with real
-line samples, then the convective, stability and airmass numbers follow in
-aligned label/value rows grouped under three headings. Missing values (a level
+A LEYEND section on top names the three series, each with a line sample
+right-aligned in the value column; the convective, stability and airmass numbers
+follow in aligned label/value rows under three headings. Missing values (a level
 below ground, no cloud) show as a dash rather than a number.
 """
 
@@ -12,20 +12,25 @@ from matplotlib.lines import Line2D
 from src.rendering.constants import (
     MS_TO_KNOTS,
     PANEL_ANCHOR,
-    PANEL_BORDER_PAD,
     PANEL_BOX_ALPHA,
     PANEL_BOX_PAD,
     PANEL_BOX_ROUNDING,
     PANEL_FONT_SIZE,
-    PANEL_HANDLE_LENGTH,
-    PANEL_HANDLE_TEXT_PAD,
-    PANEL_LABEL_SPACING,
     PANEL_LABEL_WIDTH,
+    PANEL_LINESPACING,
+    PANEL_SAMPLE_CHARS,
     PANEL_VALUE_WIDTH,
     PARCEL_LINEWIDTH,
 )
 
 _MISSING = "—"
+
+# The three plotted series and the line style of each sample.
+_SERIES = [
+    ("Temperature", {}),
+    ("Dew point", {"ls": ":"}),
+    ("Tmax parcel", {"lw": PARCEL_LINEWIDTH}),
+]
 
 
 def _value(value, template):
@@ -70,33 +75,26 @@ def _panel_rows(indices):
 
 
 def draw_indices_panel(ax, indices):
-    # Series legend with real line samples, then the data rows on blank handles so
-    # everything lines up in one monospace box.
-    handles = [
-        Line2D([], [], color="black", lw=1.0),
-        Line2D([], [], color="black", lw=1.0, ls=":"),
-        Line2D([], [], color="black", lw=PARCEL_LINEWIDTH),
-    ]
-    # Pad the legend names to a full data row width: markerfirst=False right-aligns
-    # the label text, so a full-width label keeps the name on the left (aligned with
-    # the data labels) and the line sample falls in the right-hand value column.
-    width = PANEL_LABEL_WIDTH + PANEL_VALUE_WIDTH
-    labels = [f"{name:<{width}}" for name in ("Temperature", "Dew point", "Tmax parcel")]
-    for row in [""] + _panel_rows(indices):
-        handles.append(Line2D([], [], linestyle="none", marker="none"))
-        labels.append(row)
+    # Whole box is left-aligned monospace text; the series rows leave the value
+    # column blank for the line samples drawn over them.
+    rows = (["LEYEND"] + [name for name, _ in _SERIES] + [""] + _panel_rows(indices))
+    text = ax.text(
+        *PANEL_ANCHOR, "\n".join(rows), transform=ax.transAxes, ha="left", va="top",
+        family="monospace", fontsize=PANEL_FONT_SIZE, linespacing=PANEL_LINESPACING, zorder=8,
+        bbox=dict(boxstyle=f"round,pad={PANEL_BOX_PAD},rounding_size={PANEL_BOX_ROUNDING}",
+                  facecolor="white", edgecolor="gray", linewidth=0.4, alpha=PANEL_BOX_ALPHA))
 
-    legend = ax.legend(
-        handles, labels, loc="upper left", bbox_to_anchor=PANEL_ANCHOR,
-        prop={"family": "monospace", "size": PANEL_FONT_SIZE}, markerfirst=False,
-        labelspacing=PANEL_LABEL_SPACING, handlelength=PANEL_HANDLE_LENGTH,
-        handletextpad=PANEL_HANDLE_TEXT_PAD, borderpad=PANEL_BORDER_PAD,
-        borderaxespad=0.0)
-    legend.set_zorder(8)
-
-    frame = legend.get_frame()
-    frame.set_boxstyle(f"round,pad={PANEL_BOX_PAD},rounding_size={PANEL_BOX_ROUNDING}")
-    frame.set_facecolor("white")
-    frame.set_edgecolor("gray")
-    frame.set_linewidth(0.4)
-    frame.set_alpha(PANEL_BOX_ALPHA)
+    # Line samples, right-aligned in the value column, on the series rows (1..3).
+    figure = ax.figure
+    figure.canvas.draw()
+    box = text.get_window_extent(figure.canvas.get_renderer())
+    row_height = box.height / len(rows)
+    char_width = box.width / max(len(row) for row in rows)
+    to_axes = ax.transAxes.inverted()
+    for index, (_name, style) in enumerate(_SERIES, start=1):
+        y = box.y1 - (index + 0.5) * row_height
+        (x_left, y_axes), (x_right, _) = to_axes.transform(
+            [(box.x1 - PANEL_SAMPLE_CHARS * char_width, y), (box.x1, y)])
+        ax.add_line(Line2D([x_left, x_right], [y_axes, y_axes], transform=ax.transAxes,
+                           color="black", lw=style.get("lw", 1.0), ls=style.get("ls", "-"),
+                           zorder=9))
