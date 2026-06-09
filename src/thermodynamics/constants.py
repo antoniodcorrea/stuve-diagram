@@ -22,6 +22,17 @@ DRY_AIR_TO_WATER_VAPOUR_RATIO = 0.622
 # Percent (relative humidity) to fraction
 PERCENT_TO_FRACTION = 100.0
 
+# Icing band: the isotherm (°C) marking the top of the most severe clear-icing
+# layer (0 °C down to here), drawn alongside the 0 °C freezing level.
+ICING_ISOTHERM_CELSIUS = -10.0
+
+# Estimated thermal updraft speed: a parcel that releases dry buoyant energy B
+# would reach sqrt(2 B) in pure parcel theory. Real thermals climb at a small
+# fraction of that — entrainment and drag bleed off most of the buoyancy, and the
+# energy here is computed against the stable morning sounding, which inflates the
+# excess. This factor calibrates the estimate into the soaring range (~1–5 m/s).
+THERMAL_UPDRAFT_EFFICIENCY = 0.15
+
 # Background grid (temperature / pressure) sampling
 GRID_TEMPERATURE_STEP_CELSIUS = 5.0
 GRID_PRESSURE_STEP_HPA = 10.0

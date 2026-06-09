@@ -9,6 +9,7 @@ from src.rendering.draw_background import draw_background
 from src.rendering.draw_cape import draw_cape
 from src.rendering.draw_hodograph import draw_hodograph
 from src.rendering.draw_indices_panel import draw_indices_panel
+from src.rendering.draw_level_labels import draw_level_labels
 from src.rendering.draw_levels import draw_levels
 from src.rendering.draw_overlay_profile import draw_overlay_profile
 from src.rendering.draw_parcel import draw_parcel
@@ -29,8 +30,10 @@ def render_diagram(sounding, parcel, indices, overlay_sounding, subtitle, output
     draw_wind_barbs(ax, sounding, projection)
     draw_hodograph(ax, sounding)
     configure_axes(ax, subtitle, projection)
-    # After configure_axes: the panel measures its laid-out text to place the
-    # legend line samples, so the axes box must be final first.
+    # After configure_axes: these steps measure laid-out geometry, so the axes box
+    # must be final first — the labels declutter in display pixels, and the panel
+    # measures its text to place the legend line samples.
+    draw_level_labels(ax, indices, parcel, projection)
     draw_indices_panel(ax, indices, show_overlay=overlay_sounding is not None)
     figure.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight",
                    pad_inches=FIGURE_PAD_INCHES)

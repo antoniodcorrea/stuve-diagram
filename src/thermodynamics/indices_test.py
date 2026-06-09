@@ -6,8 +6,11 @@ from src.thermodynamics.indices import (
     compute_indices,
     convective_temperature,
     freezing_level,
+    isotherm_level,
     k_index,
+    mixing_layer_lapse_rate,
     precipitable_water,
+    thermal_strength,
 )
 from src.thermodynamics.moist_parcel import moist_parcel_profile
 from src.thermodynamics.parcel import parcel_ascent
@@ -57,6 +60,33 @@ def test_convective_temperature_is_warmer_than_the_morning_surface():
 
 def test_k_index_is_a_finite_number():
     assert isinstance(k_index(PRESSURE, TEMPERATURE, DEW_POINT), float)
+
+
+def test_icing_isotherm_sits_above_the_freezing_level():
+    freezing_pressure, _ = freezing_level(PRESSURE, TEMPERATURE, ALTITUDE)
+    icing_pressure, icing_altitude = isotherm_level(PRESSURE, TEMPERATURE, ALTITUDE, -10.0)
+    # −10 °C is reached higher up (lower pressure, greater altitude) than 0 °C.
+    assert icing_pressure < freezing_pressure
+    assert icing_altitude > 1950.0
+
+
+def test_mixing_layer_lapse_rate_is_positive_for_a_normal_lapse():
+    parcel = parcel_ascent(PRESSURE[0], MAX_TEMPERATURE, DEW_POINT[0], PRESSURE, TEMPERATURE)
+    lapse = mixing_layer_lapse_rate(PRESSURE, TEMPERATURE, ALTITUDE,
+                                    parcel["thermal_top_pressure"])
+    assert lapse > 0
+
+
+def test_thermal_strength_is_positive_with_a_working_band():
+    parcel = parcel_ascent(PRESSURE[0], MAX_TEMPERATURE, DEW_POINT[0], PRESSURE, TEMPERATURE)
+    speed, excess = thermal_strength(parcel, PRESSURE, TEMPERATURE, ALTITUDE)
+    assert speed > 0
+    assert excess > 0
+
+
+def test_thermal_strength_is_none_without_a_thermal_top():
+    speed, excess = thermal_strength({"thermal_top_pressure": None}, PRESSURE, TEMPERATURE, ALTITUDE)
+    assert speed is None and excess is None
 
 
 def test_precipitable_water_is_positive():

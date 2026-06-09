@@ -17,7 +17,9 @@ from src.thermodynamics.constants import (
     GAS_CONSTANT_DRY_AIR,
     GRAVITY,
     HPA_TO_PASCAL,
+    ICING_ISOTHERM_CELSIUS,
     KAPPA,
+    THERMAL_UPDRAFT_EFFICIENCY,
     ZERO_CELSIUS_IN_KELVIN,
 )
 from src.thermodynamics.moist_parcel import moist_parcel_profile
@@ -163,12 +165,65 @@ def thermal_index(profile, environment_pressure, environment_temperature, level)
     return float(_at(environment_pressure, environment_temperature, level) - parcel)
 
 
-def freezing_level(environment_pressure, environment_temperature, environment_altitude):
-    """Pressure (hPa) and altitude (m) of the 0 °C isotherm, or (None, None)."""
-    pressure = _first_crossing(environment_pressure, np.asarray(environment_temperature))
+def isotherm_level(environment_pressure, environment_temperature, environment_altitude,
+                   isotherm_celsius):
+    """Pressure (hPa) and altitude (m) where the environment first reaches
+    `isotherm_celsius` going up, or (None, None) if it never does."""
+    difference = np.asarray(environment_temperature, dtype=float) - isotherm_celsius
+    pressure = _first_crossing(environment_pressure, difference)
     if pressure is None:
         return None, None
     return pressure, float(_at(environment_pressure, environment_altitude, pressure))
+
+
+def freezing_level(environment_pressure, environment_temperature, environment_altitude):
+    """Pressure (hPa) and altitude (m) of the 0 °C isotherm, or (None, None)."""
+    return isotherm_level(environment_pressure, environment_temperature, environment_altitude, 0.0)
+
+
+def mixing_layer_lapse_rate(environment_pressure, environment_temperature,
+                            environment_altitude, thermal_top_pressure):
+    """Real environment lapse rate (°C/km) over the mixed layer, surface to the
+    thermal top. The stronger this is, the more buoyant the dry thermals."""
+    if thermal_top_pressure is None:
+        return None
+    surface_temperature = float(np.asarray(environment_temperature, dtype=float)[0])
+    surface_altitude = float(np.asarray(environment_altitude, dtype=float)[0])
+    top_temperature = float(_at(environment_pressure, environment_temperature, thermal_top_pressure))
+    top_altitude = float(_at(environment_pressure, environment_altitude, thermal_top_pressure))
+    depth = top_altitude - surface_altitude
+    if depth <= 0:
+        return None
+    return (surface_temperature - top_temperature) / depth * 1000.0
+
+
+def thermal_strength(parcel, environment_pressure, environment_temperature, environment_altitude):
+    """Estimated thermal climb rate (m/s) and the parcel's peak temperature excess
+    (°C) over the environment within the working band.
+
+    Integrates the dry buoyant energy the Tmax parcel releases between the surface
+    and the thermal top, then converts it to a climb speed with the efficiency
+    factor. Returns (None, None) when there is no thermal top (no working band).
+    """
+    pressures = parcel.get("pressures")
+    thermal_top = parcel.get("thermal_top_pressure")
+    if pressures is None or thermal_top is None:
+        return None, None
+    band = pressures >= thermal_top
+    if band.sum() < 2:
+        return None, None
+
+    band_pressures = pressures[band]
+    parcel_temperature = parcel["temperature"][band]
+    environment_at_band = _at(environment_pressure, environment_temperature, band_pressures)
+    altitude_at_band = _at(environment_pressure, environment_altitude, band_pressures)
+
+    excess = parcel_temperature - environment_at_band
+    buoyancy = GRAVITY * np.clip(excess, 0.0, None) / (environment_at_band + ZERO_CELSIUS_IN_KELVIN)
+    order = np.argsort(altitude_at_band)
+    energy = float(np.trapezoid(buoyancy[order], altitude_at_band[order]))
+    speed = THERMAL_UPDRAFT_EFFICIENCY * float(np.sqrt(2.0 * max(energy, 0.0)))
+    return speed, float(np.max(excess))
 
 
 def precipitable_water(environment_pressure, environment_dew_point):
@@ -183,11 +238,14 @@ def precipitable_water(environment_pressure, environment_dew_point):
     return float(np.trapezoid(specific_humidity[order], pressure_pascal) / GRAVITY)
 
 
-def compute_indices(sounding, parcel, max_temperature):
+def compute_indices(sounding, parcel, max_temperature, tmax_sounding=None):
     """All the panel scalars plus the saturated Tmax parcel and its key levels.
 
     `parcel` is the dry Tmax ascent from `parcel_ascent` (reused for the thermal
-    top and cloud base so the panel matches the drawn lines).
+    top and cloud base so the panel matches the drawn lines). `tmax_sounding` is
+    the temperature profile at the hour of peak heating; the thermal strength is
+    measured against it (the air the thermals actually rise through), falling back
+    to the morning sounding when it is not available.
     """
     surface = sounding.iloc[0]
     pressure = sounding.pressure.values
@@ -200,10 +258,21 @@ def compute_indices(sounding, parcel, max_temperature):
     trigger, ccl_pressure = convective_temperature(
         surface.pressure, surface.dew_point, pressure, temperature)
     freezing_pressure, freezing_altitude = freezing_level(pressure, temperature, altitude)
+    icing_pressure, icing_altitude = isotherm_level(
+        pressure, temperature, altitude, ICING_ISOTHERM_CELSIUS)
 
     thermal_top = parcel["thermal_top_pressure"]
     cloud_base = parcel["cloud_base_pressure"]
     surface_altitude = float(altitude[0])
+
+    strength_sounding = sounding if tmax_sounding is None else tmax_sounding
+    strength, excess = thermal_strength(parcel, strength_sounding.pressure.values,
+                                        strength_sounding.temperature.values,
+                                        strength_sounding.altitude.values)
+    ccl_temperature = None if ccl_pressure is None else float(_at(pressure, temperature, ccl_pressure))
+
+    def altitude_or_none(level_pressure):
+        return None if level_pressure is None else _altitude_at(level_pressure, pressure, altitude)
 
     # Blue day: the condensation level sits above the thermal top, so the thermals
     # die before any cumulus form. Match the drawn diagram and report no cloud base.
@@ -222,13 +291,25 @@ def compute_indices(sounding, parcel, max_temperature):
         "total_totals": total_totals(pressure, temperature, dew_point),
         "trigger_temperature": trigger,
         "ccl_pressure": ccl_pressure,
+        "ccl_temperature": ccl_temperature,
+        "ccl_altitude": altitude_or_none(ccl_pressure),
+        "lcl_pressure": profile["lcl_pressure"],
+        "lcl_altitude": altitude_or_none(profile["lcl_pressure"]),
+        "lfc_altitude": altitude_or_none(energy["lfc_pressure"]),
+        "el_altitude": altitude_or_none(energy["el_pressure"]),
         "thermal_index_850": thermal_index(profile, pressure, temperature, LEVEL_850),
         "thermal_index_700": thermal_index(profile, pressure, temperature, LEVEL_700),
         "freezing_pressure": freezing_pressure,
         "freezing_altitude": freezing_altitude,
+        "icing_pressure": icing_pressure,
+        "icing_altitude": icing_altitude,
         "precipitable_water": precipitable_water(pressure, dew_point),
         "working_band_m": (_altitude_at(thermal_top, pressure, altitude) - surface_altitude
                            if thermal_top else None),
+        "mixing_layer_lapse_rate": mixing_layer_lapse_rate(pressure, temperature, altitude, thermal_top),
+        "thermal_strength_ms": strength,
+        "thermal_excess_max": excess,
+        "surface_spread": float(surface.temperature - surface.dew_point),
         "cloud_base_m": None if blue_day else _altitude_at(cloud_base, pressure, altitude),
         "cloud_top_m": None if blue_day or energy["el_pressure"] is None
         else _altitude_at(energy["el_pressure"], pressure, altitude),

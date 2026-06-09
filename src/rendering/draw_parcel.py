@@ -1,5 +1,5 @@
 """Draw the Tmax convective parcel: the dry adiabat and mixing-ratio line, with
-the thermal top and cloud base they imply marked at their altitudes."""
+the thermal top and cloud base they imply marked as horizontal levels."""
 
 import numpy as np
 from matplotlib.transforms import blended_transform_factory
@@ -8,6 +8,7 @@ from src.config.constants import PRESSURE_BOTTOM_HPA, PRESSURE_TOP_HPA
 from src.rendering.constants import (
     FREEZING_LEVEL_DASHES,
     PARCEL_COLOR,
+    PARCEL_LABEL_COLOR,
     PARCEL_GHOST_ALPHA,
     PARCEL_GHOST_LINEWIDTH,
     PARCEL_LABEL_FONT_SIZE,
@@ -17,7 +18,6 @@ from src.rendering.constants import (
     PARCEL_LINEWIDTH,
     PARCEL_TICK_LINEWIDTH,
     PARCEL_TMAX_AXIS_OVERSHOOT,
-    PARCEL_TMAX_LABEL_RISE_POINTS,
     THERMAL_TOP_LABEL_RIGHT_GAP_POINTS,
 )
 from src.rendering.label_box import translucent_label_bbox
@@ -26,10 +26,6 @@ from src.rendering.label_box import translucent_label_bbox
 def _interp_at(pressure, pressures, values):
     ascending = pressures.argsort()
     return np.interp(pressure, pressures[ascending], values[ascending])
-
-
-def _altitude_at(pressure, sounding):
-    return _interp_at(pressure, sounding.pressure.values, sounding.altitude.values)
 
 
 def _label(ax, x, y, label, place="right", gap=PARCEL_LABEL_OFFSET_POINTS):
@@ -48,7 +44,7 @@ def _label(ax, x, y, label, place="right", gap=PARCEL_LABEL_OFFSET_POINTS):
             "above": ((0, gap), "center", "bottom"),
         }[place]
     ax.annotate(label, xy=xy, xycoords=xycoords, xytext=offset, textcoords="offset points",
-                color=PARCEL_COLOR, fontsize=PARCEL_LABEL_FONT_SIZE,
+                color=PARCEL_LABEL_COLOR, fontsize=PARCEL_LABEL_FONT_SIZE,
                 ha=ha, va=va, multialignment="center", annotation_clip=False,
                 bbox=translucent_label_bbox(), zorder=7)
 
@@ -67,7 +63,8 @@ def _mark_tmax(ax, parcel, label, projection):
     # Thick vertical tick poking through the T axis at the Tmax value.
     ax.plot([x_axis, x_axis], [y_axis, y_bottom], color=PARCEL_COLOR,
             lw=PARCEL_TICK_LINEWIDTH, clip_on=False, zorder=6)
-    _label(ax, x_axis, y_axis, label, place="above", gap=PARCEL_TMAX_LABEL_RISE_POINTS)
+    # Label at the start of the Tmax parcel line (its surface point), to the right.
+    _label(ax, x_top, y_top, label, place="right")
 
 
 def _mark_line(ax, pressure, anchor_temperature, label, projection, place="right",
@@ -99,6 +96,8 @@ def draw_parcel(ax, parcel, sounding, projection):
         ax.plot(*projection.to_xy(parcel["temperature"][ghost], pressures[ghost]),
                 color=PARCEL_COLOR, lw=PARCEL_GHOST_LINEWIDTH, ls="--",
                 alpha=PARCEL_GHOST_ALPHA, zorder=6)
+        # The LCL where the ghosted adiabat meets the mixing-ratio line is labelled
+        # by draw_level_labels (which declutters it against the CCL and EL).
 
     # Mixing-ratio line from the surface up to the cloud base (LCL).
     moisture = pressures >= (cloud_base or pressures[-1])
@@ -107,9 +106,9 @@ def draw_parcel(ax, parcel, sounding, projection):
 
     _mark_tmax(ax, parcel, f"Tmax\n{parcel['temperature'][0]:.0f}°C", projection)
     # Thermal top label pinned a fixed distance from the diagram's right edge; the
-    # cloud-base one stays anchored to the left of the sounding line.
-    _mark_line(ax, thermal_top, None,
-               f"Thermal top {_altitude_at(thermal_top, sounding):,.0f} m", projection,
+    # cloud-base one stays anchored to the left of the sounding line. The altitude
+    # is read off the left scale, so the horizontal-line labels carry only the name.
+    _mark_line(ax, thermal_top, None, "Thermal top", projection,
                place="right_edge", gap=THERMAL_TOP_LABEL_RIGHT_GAP_POINTS)
     # No cloud base on a blue day (it would sit above the thermal top). Its label
     # sits further left than the thermal-top one, so the two never overlap when the
@@ -117,6 +116,5 @@ def draw_parcel(ax, parcel, sounding, projection):
     if cloud_base is not None and not blue_day:
         environment_temperature = _interp_at(
             cloud_base, sounding.pressure.values, sounding.temperature.values)
-        _mark_line(ax, cloud_base, environment_temperature,
-                   f"Cloud base {_altitude_at(cloud_base, sounding):,.0f} m", projection,
+        _mark_line(ax, cloud_base, environment_temperature, "Cloud base", projection,
                    place="left", gap=PARCEL_CLOUD_BASE_LABEL_GAP_POINTS)

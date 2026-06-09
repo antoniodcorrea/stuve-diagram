@@ -29,6 +29,7 @@ def draw_hodograph(ax, sounding):
     direction = np.deg2rad(layer.wind_direction.to_numpy())
     u = -speed_knots * np.sin(direction)
     v = -speed_knots * np.cos(direction)
+    altitude = layer.altitude.to_numpy()
 
     inset = ax.inset_axes(HODOGRAPH_BOUNDS)
     inset.set_aspect("equal")
@@ -56,6 +57,21 @@ def draw_hodograph(ax, sounding):
 
     inset.plot(u, v, color="black", lw=HODOGRAPH_LINEWIDTH, zorder=5)
     inset.plot(u[0], v[0], "o", color="black", markersize=2, zorder=6)
+
+    # Mark each round kilometre of altitude along the curve, so the turning is tied
+    # to a height rather than just a shape.
+    order = np.argsort(altitude)
+    for kilometre in range(1, int(altitude.max() // 1000) + 1):
+        metres = kilometre * 1000
+        if metres < altitude.min():
+            continue
+        u_km = np.interp(metres, altitude[order], u[order])
+        v_km = np.interp(metres, altitude[order], v[order])
+        inset.plot(u_km, v_km, "o", color="black", markersize=1.5, zorder=6)
+        inset.annotate(f"{kilometre}", xy=(u_km, v_km), xytext=(2, 2),
+                       textcoords="offset points", fontsize=HODOGRAPH_FONT_SIZE,
+                       color="black", zorder=7)
+
     limit = rings * 1.1
     inset.set_xlim(-limit, limit)
     inset.set_ylim(-limit, limit)

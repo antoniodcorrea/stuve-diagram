@@ -60,6 +60,7 @@ BARB_PATH_TO_POINTS = 3.1
 
 # Tmax convective parcel. Same plain black, thin format as the ground-level line.
 PARCEL_COLOR = "black"
+PARCEL_LABEL_COLOR = "gray"            # labels (Tmax, thermal top, cloud base, LCL) in grey, like the derived levels
 PARCEL_LINEWIDTH = 0.6                  # thin but heavy enough to read as solid black
 PARCEL_GHOST_LINEWIDTH = 0.3            # dashed adiabat above the thermal top
 PARCEL_GHOST_ALPHA = 0.6
@@ -69,7 +70,6 @@ PARCEL_CLOUD_BASE_LABEL_GAP_POINTS = 50  # cloud-base label this far left of the
 PARCEL_TICK_LINEWIDTH = 0.8            # width of the Tmax tick, matching the T-axis ticks
 PARCEL_TMAX_AXIS_OVERSHOOT = 0.012     # how far the tick pokes past the T axis
                                        # (fraction of the pressure-axis span)
-PARCEL_TMAX_LABEL_RISE_POINTS = 11     # Tmax label gap above the T axis
 PARCEL_LABEL_FONT_SIZE = 6
 PARCEL_LABEL_OFFSET_POINTS = 6         # label this many points right of the marker
 PARCEL_LABEL_BOX_PAD = 0.12            # vertical white-label-box margin (fraction of
@@ -89,6 +89,10 @@ FREEZING_LEVEL_ALPHA = 1.0
 CLOUD_LINEWIDTH = 0.5                 # saturated adiabat from cloud base to cloud top
 LEVEL_LABEL_FONT_SIZE = 5.5
 LEVEL_LABEL_COLOR = "gray"
+LEVEL_LABEL_SIDE_GAP_POINTS = 7      # convective-level labels this far to the side of the curve
+LEVEL_LABEL_MIN_GAP_POINTS = 9       # minimum vertical spacing between two of them before nudging apart
+ICING_LEVEL_ALPHA = 0.55             # −10 °C icing isotherm, fainter than the 0 °C line
+CONVECTIVE_LEVEL_ALPHA = 0.55        # EL / CCL horizontal lines, as faint as the icing line
 
 # CAPE: positive-buoyancy area (LFC to EL) shaded with hatching, behind the
 # curves. A darker hatch over a faint fill so it reads against the grey
@@ -101,7 +105,7 @@ CAPE_FILL = (0.4, 0.4, 0.4, 0.1)
 # Soaring-indices panel: a small monospace text box in the lower-left (the cold,
 # empty high-pressure corner), clear of the altitude labels at the very edge.
 PANEL_ANCHOR = (0.21, 0.942)          # upper-left corner; top aligned with the hodograph circle
-PANEL_LABEL_WIDTH = 13                # characters reserved for each label column
+PANEL_LABEL_WIDTH = 14                # characters reserved for each label column
 PANEL_VALUE_WIDTH = 10               # characters reserved for each value column
 PANEL_FONT_SIZE = 5.0
 PANEL_TITLE_FONT_SIZE = 6.0

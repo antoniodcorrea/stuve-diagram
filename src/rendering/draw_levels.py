@@ -1,8 +1,8 @@
-"""Draw the derived levels: the 0 °C freezing level and the cumulus cloud (the
-saturated adiabat from cloud base to the equilibrium level), with the level of
-free convection and equilibrium level marked on it."""
+"""Draw the 0 °C freezing level (with a right-edge label), plus the cumulus cloud
+(the saturated adiabat from cloud base to the equilibrium level). The convective
+levels (CCL/EL/LFC/LCL) are labelled beside the curves by `draw_level_labels`."""
 
-import numpy as np
+from matplotlib.transforms import blended_transform_factory
 
 from src.rendering.constants import (
     CLOUD_LINEWIDTH,
@@ -12,29 +12,32 @@ from src.rendering.constants import (
     FREEZING_LEVEL_LINEWIDTH,
     LEVEL_LABEL_COLOR,
     LEVEL_LABEL_FONT_SIZE,
+    THERMAL_TOP_LABEL_RIGHT_GAP_POINTS,
 )
 from src.rendering.label_box import translucent_label_bbox
 
 
-def _interp_at(pressure, pressures, values):
-    order = pressures.argsort()
-    return np.interp(pressure, pressures[order], values[order])
+def _level_line(ax, pressure, alpha, projection):
+    ax.axhline(projection.pressure_to_y(pressure), color=FREEZING_LEVEL_COLOR,
+               lw=FREEZING_LEVEL_LINEWIDTH, ls=FREEZING_LEVEL_DASHES, alpha=alpha, zorder=3)
 
 
-def _label(ax, x, y, text):
-    ax.annotate(text, xy=(x, y), xytext=(0, 2), textcoords="offset points",
+def _isotherm(ax, pressure, text, alpha, projection):
+    if pressure is None:
+        return
+    _level_line(ax, pressure, alpha, projection)
+    # Pinned near the right edge (like "Thermal top"), clear of the parcel-line
+    # labels (LFC/EL/CCL) which can sit at the same level on a given sounding.
+    ax.annotate(text, xy=(1.0, projection.pressure_to_y(pressure)),
+                xycoords=blended_transform_factory(ax.transAxes, ax.transData),
+                xytext=(-THERMAL_TOP_LABEL_RIGHT_GAP_POINTS, 0), textcoords="offset points",
                 color=LEVEL_LABEL_COLOR, fontsize=LEVEL_LABEL_FONT_SIZE,
-                ha="center", va="bottom", annotation_clip=False, zorder=7,
+                ha="right", va="center", annotation_clip=False, zorder=7,
                 bbox=translucent_label_bbox())
 
 
 def draw_levels(ax, indices, projection):
-    freezing_pressure = indices["freezing_pressure"]
-    if freezing_pressure is not None:
-        x, y = projection.to_xy(0.0, freezing_pressure)
-        ax.axhline(y, color=FREEZING_LEVEL_COLOR, lw=FREEZING_LEVEL_LINEWIDTH,
-                   ls=FREEZING_LEVEL_DASHES, alpha=FREEZING_LEVEL_ALPHA, zorder=3)
-        _label(ax, x, y, "0 °C")
+    _isotherm(ax, indices["freezing_pressure"], "0 °C", FREEZING_LEVEL_ALPHA, projection)
 
     profile = indices["parcel_profile"]
     el = indices["el_pressure"]
@@ -45,10 +48,3 @@ def draw_levels(ax, indices, projection):
         cloud = (profile["pressures"] <= lcl) & (profile["pressures"] >= el)
         ax.plot(*projection.to_xy(profile["temperature"][cloud], profile["pressures"][cloud]),
                 color="black", lw=CLOUD_LINEWIDTH, zorder=6)
-        x, y = projection.to_xy(_interp_at(el, profile["pressures"], profile["temperature"]), el)
-        _label(ax, x, y, "EL")
-
-    lfc = indices["lfc_pressure"]
-    if lfc is not None:
-        x, y = projection.to_xy(_interp_at(lfc, profile["pressures"], profile["temperature"]), lfc)
-        _label(ax, x, y, "LFC")

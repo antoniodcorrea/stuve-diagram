@@ -68,17 +68,19 @@ def main():
     parcel = parcel_ascent(surface.pressure, max_temperature, surface.dew_point,
                            sounding.pressure.values, sounding.temperature.values)
 
-    indices = compute_indices(sounding, parcel, max_temperature)
+    # The temperature profile at the hour of Tmax (peak heating): overlaid on the
+    # diagram, and the air the thermals rise through for the thermal-strength figure.
+    tmax_index = select_tmax_hour(hourly["time"], hourly["temperature_2m"], args.day_offset)
+    tmax_sounding = (sounding_from_forecast(forecast, tmax_index)
+                     if tmax_index is not None and tmax_index != hour_index else None)
+
+    indices = compute_indices(sounding, parcel, max_temperature, tmax_sounding)
     thermal_top = parcel["thermal_top_pressure"] or sounding.pressure.min()
     indices["mean_wind_direction"], indices["mean_wind_speed"] = mean_layer_wind(
         sounding, thermal_top)
     indices["bulk_shear"] = bulk_shear(sounding)
 
-    # Overlay the temperature line at the hour of Tmax (peak heating), unless that
-    # is the hour already being rendered.
-    tmax_index = select_tmax_hour(hourly["time"], hourly["temperature_2m"], args.day_offset)
-    overlay_sounding = (sounding_from_forecast(forecast, tmax_index)
-                        if tmax_index is not None and tmax_index != hour_index else None)
+    overlay_sounding = tmax_sounding
 
     date = forecast_time[:10]
     metar_time = forecast_time[11:16].replace(":", "")
