@@ -7,6 +7,7 @@ from src.rendering.configure_axes import configure_axes
 from src.rendering.draw_altitude_labels import draw_altitude_labels
 from src.rendering.draw_background import draw_background
 from src.rendering.draw_cape import draw_cape
+from src.rendering.draw_glossary import draw_glossary
 from src.rendering.draw_hodograph import draw_hodograph
 from src.rendering.draw_indices_panel import draw_indices_panel
 from src.rendering.draw_level_labels import draw_level_labels
@@ -35,6 +36,7 @@ def render_diagram(sounding, parcel, indices, overlay_sounding, subtitle, output
     # measures its text to place the legend line samples.
     draw_level_labels(ax, indices, parcel, projection)
     draw_indices_panel(ax, indices, show_overlay=overlay_sounding is not None)
+    draw_glossary(ax)
     figure.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight",
                    pad_inches=FIGURE_PAD_INCHES)
     plt.close(figure)

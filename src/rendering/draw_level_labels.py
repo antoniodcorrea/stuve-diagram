@@ -9,8 +9,6 @@ the axes' physical height. The altitude of every level is read off the left scal
 so the labels carry only the name.
 """
 
-import numpy as np
-
 from src.rendering.constants import (
     LEVEL_LABEL_COLOR,
     LEVEL_LABEL_FONT_SIZE,
@@ -18,13 +16,9 @@ from src.rendering.constants import (
     LEVEL_LABEL_SIDE_GAP_POINTS,
 )
 from src.rendering.label_box import translucent_label_bbox
+from src.thermodynamics.column import interp_at
 
 POINTS_PER_INCH = 72.0
-
-
-def _interp_at(value, xs, ys):
-    order = np.argsort(xs)
-    return float(np.interp(value, np.asarray(xs)[order], np.asarray(ys)[order]))
 
 
 def _collect(indices, parcel):
@@ -36,11 +30,11 @@ def _collect(indices, parcel):
     el = indices["el_pressure"]
     lcl = profile["lcl_pressure"]
     if el is not None and lcl is not None and el < lcl:
-        specs.append((el, _interp_at(el, profile["pressures"], profile["temperature"]), "EL"))
+        specs.append((el, float(interp_at(profile["pressures"], profile["temperature"], el)), "EL"))
 
     lfc = indices["lfc_pressure"]
     if lfc is not None:
-        specs.append((lfc, _interp_at(lfc, profile["pressures"], profile["temperature"]), "LFC"))
+        specs.append((lfc, float(interp_at(profile["pressures"], profile["temperature"], lfc)), "LFC"))
 
     ccl = indices["ccl_pressure"]
     if ccl is not None and indices["ccl_temperature"] is not None:
@@ -51,8 +45,8 @@ def _collect(indices, parcel):
     cloud_base = parcel["cloud_base_pressure"]
     thermal_top = parcel["thermal_top_pressure"] or parcel["pressures"][-1]
     if cloud_base is not None and cloud_base < thermal_top:
-        specs.append((cloud_base, _interp_at(cloud_base, parcel["pressures"], parcel["temperature"]),
-                      "LCL"))
+        specs.append((cloud_base,
+                      float(interp_at(parcel["pressures"], parcel["temperature"], cloud_base)), "LCL"))
 
     return specs
 

@@ -9,7 +9,6 @@ from src.thermodynamics.indices import (
     isotherm_level,
     k_index,
     mixing_layer_lapse_rate,
-    precipitable_water,
     thermal_strength,
 )
 from src.thermodynamics.moist_parcel import moist_parcel_profile
@@ -89,15 +88,6 @@ def test_thermal_strength_is_none_without_a_thermal_top():
     assert speed is None and excess is None
 
 
-def test_precipitable_water_is_positive():
-    assert precipitable_water(PRESSURE, DEW_POINT) > 0
-
-
-def test_precipitable_water_ignores_bone_dry_nan_levels():
-    dew_point = DEW_POINT[:-1] + [float("nan")]
-    assert precipitable_water(PRESSURE, dew_point) > 0
-
-
 def test_blue_day_reports_no_cloud_base():
     # Cloud base above the thermal top: the panel must not claim a cloud base.
     parcel = {"thermal_top_pressure": 850.0, "cloud_base_pressure": 700.0}
@@ -116,6 +106,7 @@ def test_compute_indices_exposes_every_panel_key():
     indices = _indices()
     for key in ["cape", "cin", "lifted_index", "showalter_index", "k_index",
                 "total_totals", "trigger_temperature", "thermal_index_850",
-                "thermal_index_700", "freezing_altitude", "precipitable_water",
-                "working_band_m", "cloud_base_m", "parcel_profile"]:
+                "thermal_index_700", "freezing_altitude", "lcl_altitude", "ccl_altitude",
+                "lfc_altitude", "el_altitude", "working_band_m", "cloud_base_m",
+                "parcel_profile"]:
         assert key in indices

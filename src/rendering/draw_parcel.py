@@ -1,13 +1,13 @@
 """Draw the Tmax convective parcel: the dry adiabat and mixing-ratio line, with
 the thermal top and cloud base they imply marked as horizontal levels."""
 
-import numpy as np
 from matplotlib.transforms import blended_transform_factory
 
 from src.config.constants import PRESSURE_BOTTOM_HPA, PRESSURE_TOP_HPA
 from src.rendering.constants import (
     FREEZING_LEVEL_DASHES,
     PARCEL_COLOR,
+    PARCEL_LINE_COLOR,
     PARCEL_LABEL_COLOR,
     PARCEL_GHOST_ALPHA,
     PARCEL_GHOST_LINEWIDTH,
@@ -21,11 +21,7 @@ from src.rendering.constants import (
     THERMAL_TOP_LABEL_RIGHT_GAP_POINTS,
 )
 from src.rendering.label_box import translucent_label_bbox
-
-
-def _interp_at(pressure, pressures, values):
-    ascending = pressures.argsort()
-    return np.interp(pressure, pressures[ascending], values[ascending])
+from src.thermodynamics.column import interp_at
 
 
 def _label(ax, x, y, label, place="right", gap=PARCEL_LABEL_OFFSET_POINTS):
@@ -58,7 +54,7 @@ def _mark_tmax(ax, parcel, label, projection):
     x_top = projection.x_at(temperature, y_top)
     x_axis = projection.x_at(temperature, y_axis)
     # Thin continuation of the adiabat down the isotherm to the T axis.
-    ax.plot([x_top, x_axis], [y_top, y_axis], color=PARCEL_COLOR,
+    ax.plot([x_top, x_axis], [y_top, y_axis], color=PARCEL_LINE_COLOR,
             lw=PARCEL_LINEWIDTH, zorder=6)
     # Thick vertical tick poking through the T axis at the Tmax value.
     ax.plot([x_axis, x_axis], [y_axis, y_bottom], color=PARCEL_COLOR,
@@ -87,14 +83,14 @@ def draw_parcel(ax, parcel, sounding, projection):
     # Dry adiabat (Tmax parcel) from the surface up to the thermal top.
     adiabat = pressures >= thermal_top
     ax.plot(*projection.to_xy(parcel["temperature"][adiabat], pressures[adiabat]),
-            color=PARCEL_COLOR, lw=PARCEL_LINEWIDTH, label="Tmax parcel", zorder=6)
+            color=PARCEL_LINE_COLOR, lw=PARCEL_LINEWIDTH, label="Tmax parcel", zorder=6)
 
     # On a blue day the cloud base sits above the thermal top: ghost the adiabat
     # up to it (dashed) so it visibly meets the mixing-ratio line at the LCL.
     if blue_day and cloud_base is not None:
         ghost = (pressures <= thermal_top) & (pressures >= cloud_base)
         ax.plot(*projection.to_xy(parcel["temperature"][ghost], pressures[ghost]),
-                color=PARCEL_COLOR, lw=PARCEL_GHOST_LINEWIDTH, ls="--",
+                color=PARCEL_LINE_COLOR, lw=PARCEL_GHOST_LINEWIDTH, ls="--",
                 alpha=PARCEL_GHOST_ALPHA, zorder=6)
         # The LCL where the ghosted adiabat meets the mixing-ratio line is labelled
         # by draw_level_labels (which declutters it against the CCL and EL).
@@ -102,7 +98,7 @@ def draw_parcel(ax, parcel, sounding, projection):
     # Mixing-ratio line from the surface up to the cloud base (LCL).
     moisture = pressures >= (cloud_base or pressures[-1])
     ax.plot(*projection.to_xy(parcel["dew_point"][moisture], pressures[moisture]),
-            color=PARCEL_COLOR, lw=PARCEL_LINEWIDTH, zorder=6)
+            color=PARCEL_LINE_COLOR, lw=PARCEL_LINEWIDTH, zorder=6)
 
     _mark_tmax(ax, parcel, f"Tmax\n{parcel['temperature'][0]:.0f}°C", projection)
     # Thermal top label pinned a fixed distance from the diagram's right edge; the
@@ -114,7 +110,7 @@ def draw_parcel(ax, parcel, sounding, projection):
     # sits further left than the thermal-top one, so the two never overlap when the
     # levels are close together.
     if cloud_base is not None and not blue_day:
-        environment_temperature = _interp_at(
-            cloud_base, sounding.pressure.values, sounding.temperature.values)
+        environment_temperature = interp_at(
+            sounding.pressure.values, sounding.temperature.values, cloud_base)
         _mark_line(ax, cloud_base, environment_temperature, "Cloud base", projection,
                    place="left", gap=PARCEL_CLOUD_BASE_LABEL_GAP_POINTS)

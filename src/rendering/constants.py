@@ -37,8 +37,8 @@ ALTITUDE_LABEL_STEP_METRES = 1000
 ALTITUDE_LABEL_STEP_FEET = 5000
 # Drop a metre label this close above the ground, so it doesn't crowd the ground label
 ALTITUDE_LABEL_MIN_GAP_METRES = 400
-ALTITUDE_LABEL_LEFT_OFFSET_CELSIUS = 1   # metres column: x = TEMPERATURE_MIN + this
-ALTITUDE_FEET_OFFSET_CELSIUS = 9         # feet column, to the right of the metres
+ALTITUDE_LABEL_LEFT_OFFSET_CELSIUS = 4   # metres column: x = TEMPERATURE_MIN + this (clear of the axis)
+ALTITUDE_FEET_OFFSET_CELSIUS = 14        # feet column, to the right of the metres
 METRES_TO_FEET = 3.28084
 # Skip altitude labels this close to the top, so their text stays inside the box
 ALTITUDE_LABEL_TOP_MARGIN_HPA = 4
@@ -58,8 +58,11 @@ WIND_LABEL_OFFSET_POINTS = 8             # wind label this many points below the
 # used to place each label under the barb's true horizontal centre
 BARB_PATH_TO_POINTS = 3.1
 
-# Tmax convective parcel. Same plain black, thin format as the ground-level line.
+# Tmax convective parcel. The ascent curves (dry adiabat + mixing-ratio line) are
+# grey so they read as derived, not as part of the observed sounding; the Tmax
+# axis tick and the thermal-top/cloud-base level lines stay black.
 PARCEL_COLOR = "black"
+PARCEL_LINE_COLOR = "gray"             # the dry adiabat and mixing-ratio ascent curves
 PARCEL_LABEL_COLOR = "gray"            # labels (Tmax, thermal top, cloud base, LCL) in grey, like the derived levels
 PARCEL_LINEWIDTH = 0.6                  # thin but heavy enough to read as solid black
 PARCEL_GHOST_LINEWIDTH = 0.3            # dashed adiabat above the thermal top
@@ -77,6 +80,10 @@ PARCEL_LABEL_BOX_PAD = 0.12            # vertical white-label-box margin (fracti
 LABEL_BOX_HORIZONTAL_PAD = 0.6         # wider horizontal margin for the same boxes
 LABEL_BOX_ROUNDING = 0.18              # corner radius (fraction of font size) ≈ a few px
 PARCEL_LABEL_BOX_ALPHA = 0.8           # translucency of the white label box
+
+# Observed sounding profile colours
+TEMPERATURE_COLOR = "black"           # temperature line (07 LT and the Tmax-hour overlay)
+DEW_POINT_COLOR = "black"             # dew-point line
 
 # Overlaid reference sounding (Tmax-hour temperature line), thinner than the profile
 OVERLAY_PROFILE_LINEWIDTH = 0.5
@@ -105,7 +112,7 @@ CAPE_FILL = (0.4, 0.4, 0.4, 0.1)
 # Soaring-indices panel: a small monospace text box in the lower-left (the cold,
 # empty high-pressure corner), clear of the altitude labels at the very edge.
 PANEL_ANCHOR = (0.21, 0.942)          # upper-left corner; top aligned with the hodograph circle
-PANEL_LABEL_WIDTH = 14                # characters reserved for each label column
+PANEL_LABEL_WIDTH = 13                # characters reserved for each label column
 PANEL_VALUE_WIDTH = 10               # characters reserved for each value column
 PANEL_FONT_SIZE = 5.0
 PANEL_TITLE_FONT_SIZE = 6.0
@@ -114,6 +121,12 @@ PANEL_BOX_PAD = 0.5
 PANEL_BOX_ROUNDING = 0.15            # small corner radius (≈ a few px), like the labels
 PANEL_LINESPACING = 1.35            # vertical spacing between rows
 PANEL_SAMPLE_CHARS = 4              # width of a legend line sample, in characters
+
+# Glossary: a concise key to the panel entries, below the diagram, in three columns
+# (panel monospace font).
+GLOSSARY_TERM_WIDTH = 12            # characters reserved for the term before its definition
+GLOSSARY_COLUMN_X = (0.0, 0.36, 0.70)   # left edge of each column, in axes fraction
+GLOSSARY_TOP_GAP_POINTS = 46       # top of the glossary, points below the axes (clear of the T label)
 
 # Hodograph: a small inset in the upper-right (wind tips joined, rings in knots),
 # left of the wind-barb column

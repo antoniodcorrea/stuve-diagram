@@ -1,13 +1,15 @@
 """Draw the temperature and dew-point profiles plus the ground-level line."""
 
+from src.rendering.constants import DEW_POINT_COLOR, TEMPERATURE_COLOR
+
 
 def draw_profile(ax, sounding, projection):
     temperature_x, temperature_y = projection.to_xy(sounding.temperature, sounding.pressure)
     ax.plot(temperature_x, temperature_y,
-            color="black", lw=1.0, label="Temperature", zorder=5)
+            color=TEMPERATURE_COLOR, lw=1.0, label="Temperature", zorder=5)
     dew_point_x, dew_point_y = projection.to_xy(sounding.dew_point, sounding.pressure)
     ax.plot(dew_point_x, dew_point_y,
-            color="black", lw=1.0, ls=":", label="Dew point", zorder=5)
+            color=DEW_POINT_COLOR, lw=1.0, ls=":", label="Dew point", zorder=5)
 
     # Ground level: the highest measured pressure
     ground_pressure = sounding.pressure.max()

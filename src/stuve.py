@@ -28,7 +28,6 @@ from src.helpers.slugify import slugify
 from src.sounding.sounding_from_forecast import sounding_from_forecast
 from src.thermodynamics.indices import compute_indices
 from src.thermodynamics.parcel import parcel_ascent
-from src.thermodynamics.wind import bulk_shear, mean_layer_wind
 
 
 def parse_args():
@@ -75,10 +74,6 @@ def main():
                      if tmax_index is not None and tmax_index != hour_index else None)
 
     indices = compute_indices(sounding, parcel, max_temperature, tmax_sounding)
-    thermal_top = parcel["thermal_top_pressure"] or sounding.pressure.min()
-    indices["mean_wind_direction"], indices["mean_wind_speed"] = mean_layer_wind(
-        sounding, thermal_top)
-    indices["bulk_shear"] = bulk_shear(sounding)
 
     overlay_sounding = tmax_sounding
 

@@ -12,12 +12,11 @@ for the panel plus the saturated parcel profile and key pressures for drawing.
 
 import numpy as np
 
+from src.thermodynamics.column import first_crossing, interp_at
 from src.thermodynamics.constants import (
     DRY_AIR_TO_WATER_VAPOUR_RATIO,
     GAS_CONSTANT_DRY_AIR,
     GRAVITY,
-    HPA_TO_PASCAL,
-    ICING_ISOTHERM_CELSIUS,
     KAPPA,
     THERMAL_UPDRAFT_EFFICIENCY,
     ZERO_CELSIUS_IN_KELVIN,
@@ -32,30 +31,10 @@ from src.thermodynamics.saturation import (
 # Fixed levels (hPa) the classic stability indices are defined on.
 LEVEL_850, LEVEL_700, LEVEL_500 = 850.0, 700.0, 500.0
 
-
-def _at(pressures, values, target):
-    """Linear interpolation of `values` to `target` pressure(s) (hPa)."""
-    pressures = np.asarray(pressures, dtype=float)
-    order = np.argsort(pressures)
-    return np.interp(target, pressures[order], np.asarray(values, dtype=float)[order])
-
-
-def _first_crossing(pressures, difference):
-    """Pressure where `difference` first drops to <= 0 going up, interpolated.
-
-    Mirrors the surface-positive convention in `parcel.py`; returns None if it
-    never crosses within the column.
-    """
-    pressures = np.asarray(pressures, dtype=float)
-    difference = np.asarray(difference, dtype=float)
-    below = np.flatnonzero(difference <= 0)
-    if below.size == 0 or below[0] == 0:
-        return None
-    upper = below[0]
-    lower = upper - 1
-    span = difference[lower] - difference[upper]
-    fraction = difference[lower] / span
-    return pressures[lower] + (pressures[upper] - pressures[lower]) * fraction
+# The column helpers, under the (pressures, values, target) argument order this
+# module reads naturally; see src/thermodynamics/column.py for the implementation.
+_at = interp_at
+_first_crossing = first_crossing
 
 
 def cape_cin(profile, environment_pressure, environment_temperature):
@@ -226,18 +205,6 @@ def thermal_strength(parcel, environment_pressure, environment_temperature, envi
     return speed, float(np.max(excess))
 
 
-def precipitable_water(environment_pressure, environment_dew_point):
-    """Total column precipitable water (mm)."""
-    pressures = np.asarray(environment_pressure, dtype=float)
-    specific_humidity = mixing_ratio(saturation_vapour_pressure(np.asarray(environment_dew_point)),
-                                     pressures)
-    # Bone-dry levels report a NaN dew point; count them as carrying no moisture.
-    specific_humidity = np.nan_to_num(specific_humidity, nan=0.0)
-    order = np.argsort(pressures)
-    pressure_pascal = pressures[order] * HPA_TO_PASCAL
-    return float(np.trapezoid(specific_humidity[order], pressure_pascal) / GRAVITY)
-
-
 def compute_indices(sounding, parcel, max_temperature, tmax_sounding=None):
     """All the panel scalars plus the saturated Tmax parcel and its key levels.
 
@@ -258,8 +225,6 @@ def compute_indices(sounding, parcel, max_temperature, tmax_sounding=None):
     trigger, ccl_pressure = convective_temperature(
         surface.pressure, surface.dew_point, pressure, temperature)
     freezing_pressure, freezing_altitude = freezing_level(pressure, temperature, altitude)
-    icing_pressure, icing_altitude = isotherm_level(
-        pressure, temperature, altitude, ICING_ISOTHERM_CELSIUS)
 
     thermal_top = parcel["thermal_top_pressure"]
     cloud_base = parcel["cloud_base_pressure"]
@@ -301,15 +266,11 @@ def compute_indices(sounding, parcel, max_temperature, tmax_sounding=None):
         "thermal_index_700": thermal_index(profile, pressure, temperature, LEVEL_700),
         "freezing_pressure": freezing_pressure,
         "freezing_altitude": freezing_altitude,
-        "icing_pressure": icing_pressure,
-        "icing_altitude": icing_altitude,
-        "precipitable_water": precipitable_water(pressure, dew_point),
         "working_band_m": (_altitude_at(thermal_top, pressure, altitude) - surface_altitude
                            if thermal_top else None),
         "mixing_layer_lapse_rate": mixing_layer_lapse_rate(pressure, temperature, altitude, thermal_top),
         "thermal_strength_ms": strength,
         "thermal_excess_max": excess,
-        "surface_spread": float(surface.temperature - surface.dew_point),
         "cloud_base_m": None if blue_day else _altitude_at(cloud_base, pressure, altitude),
         "cloud_top_m": None if blue_day or energy["el_pressure"] is None
         else _altitude_at(energy["el_pressure"], pressure, altitude),

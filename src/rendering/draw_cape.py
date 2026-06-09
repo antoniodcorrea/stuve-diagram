@@ -11,6 +11,7 @@ from src.rendering.constants import (
     CAPE_HATCH_COLOR,
     CAPE_HATCH_LINEWIDTH,
 )
+from src.thermodynamics.column import interp_at
 
 
 def draw_cape(ax, indices, sounding, projection):
@@ -27,9 +28,8 @@ def draw_cape(ax, indices, sounding, projection):
 
     band_pressures = pressures[band]
     parcel_temperature = profile["temperature"][band]
-    order = sounding.pressure.argsort()
-    environment_temperature = np.interp(
-        band_pressures, sounding.pressure.values[order], sounding.temperature.values[order])
+    environment_temperature = interp_at(
+        sounding.pressure.values, sounding.temperature.values, band_pressures)
 
     parcel_x, parcel_y = projection.to_xy(parcel_temperature, band_pressures)
     environment_x, environment_y = projection.to_xy(environment_temperature, band_pressures)

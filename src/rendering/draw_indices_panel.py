@@ -10,7 +10,7 @@ below ground, no cloud) show as a dash rather than a number.
 from matplotlib.lines import Line2D
 
 from src.rendering.constants import (
-    MS_TO_KNOTS,
+    DEW_POINT_COLOR,
     OVERLAY_PROFILE_LINEWIDTH,
     PANEL_ANCHOR,
     PANEL_BOX_ALPHA,
@@ -21,16 +21,18 @@ from src.rendering.constants import (
     PANEL_LINESPACING,
     PANEL_SAMPLE_CHARS,
     PANEL_VALUE_WIDTH,
+    PARCEL_LINE_COLOR,
     PARCEL_LINEWIDTH,
+    TEMPERATURE_COLOR,
 )
 
 _MISSING = "—"
 
 # The three plotted series and the line style of each sample.
 _SERIES = [
-    ("Temperature", {}),
-    ("Dew point", {"ls": ":"}),
-    ("Tmax parcel", {"lw": PARCEL_LINEWIDTH}),
+    ("Temp. (0700)", {"color": TEMPERATURE_COLOR}),
+    ("Dew point", {"ls": ":", "color": DEW_POINT_COLOR}),
+    ("Tmax parcel", {"lw": PARCEL_LINEWIDTH, "color": PARCEL_LINE_COLOR}),
 ]
 
 
@@ -42,25 +44,32 @@ def _row(label, value):
     return f"{label:<{PANEL_LABEL_WIDTH}}{value:>{PANEL_VALUE_WIDTH}}"
 
 
-def _knots(speed_ms):
-    return None if speed_ms is None else speed_ms * MS_TO_KNOTS
+def _level_rows(indices):
+    """The named levels, highest altitude first; a missing one sinks to the bottom."""
+    levels = [("EL", indices.get("el_altitude")),
+              ("LFC", indices.get("lfc_altitude")),
+              ("Freezing", indices.get("freezing_altitude")),
+              ("CCL", indices.get("ccl_altitude")),
+              ("LCL", indices.get("lcl_altitude"))]
+    levels.sort(key=lambda item: item[1] if item[1] is not None else float("-inf"), reverse=True)
+    return [_row(name, _value(altitude, "{:,.0f} m")) for name, altitude in levels]
 
 
 def _panel_rows(indices):
     thermal_index = (f"{_value(indices['thermal_index_850'], '{:+.0f}')}"
                      f"/{_value(indices['thermal_index_700'], '{:+.0f}')}")
-    mean_wind = (f"{_value(indices.get('mean_wind_direction'), '{:.0f}')}°"
-                 f"/{_value(_knots(indices.get('mean_wind_speed')), '{:.0f}')}kt")
     return [
         "THERMALS",
         _row("Trigger T", _value(indices["trigger_temperature"], "{:.0f} °C")),
         _row("Working bd", _value(indices["working_band_m"], "{:,.0f} m")),
         _row("Lapse rate", _value(indices.get("mixing_layer_lapse_rate"), "{:.1f} °C/km")),
-        _row("Th. Str. Max T", _value(indices.get("thermal_strength_ms"), "{:.1f} m/s")),
+        _row("Max Th Str", _value(indices.get("thermal_strength_ms"), "{:.1f} m/s")),
         _row("Cloud base", _value(indices["cloud_base_m"], "{:,.0f} m")),
         _row("Cloud top", _value(indices["cloud_top_m"], "{:,.0f} m")),
-        _row("Sfc spread", _value(indices.get("surface_spread"), "{:.0f} °C")),
         _row("TI 850/700", thermal_index),
+        "",
+        "LEVELS",
+        *_level_rows(indices),
         "",
         "STABILITY",
         _row("CAPE", _value(indices["cape"], "{:,.0f} J/kg")),
@@ -69,19 +78,14 @@ def _panel_rows(indices):
         _row("Showalter", _value(indices["showalter_index"], "{:+.0f} °C")),
         _row("K-index", _value(indices["k_index"], "{:.0f}")),
         _row("Total Tot.", _value(indices["total_totals"], "{:.0f}")),
-        "",
-        "AIRMASS",
-        _row("Freezing", _value(indices["freezing_altitude"], "{:,.0f} m")),
-        _row("Prec.water", _value(indices["precipitable_water"], "{:.0f} mm")),
-        _row("Mean wind", mean_wind),
-        _row("Shear 6km", _value(_knots(indices.get("bulk_shear")), "{:.0f} kt")),
     ]
 
 
 def draw_indices_panel(ax, indices, show_overlay=False):
     # Whole box is left-aligned monospace text; the series rows leave the value
     # column blank for the line samples drawn over them.
-    series = _SERIES + ([("Tmax temp.", {"ls": "--", "lw": OVERLAY_PROFILE_LINEWIDTH})]
+    series = _SERIES + ([("Tmax temp.", {"ls": "--", "lw": OVERLAY_PROFILE_LINEWIDTH,
+                                         "color": TEMPERATURE_COLOR})]
                         if show_overlay else [])
     rows = (["LEYEND"] + [name for name, _ in series] + [""] + _panel_rows(indices))
     text = ax.text(
@@ -102,5 +106,5 @@ def draw_indices_panel(ax, indices, show_overlay=False):
         (x_left, y_axes), (x_right, _) = to_axes.transform(
             [(box.x1 - PANEL_SAMPLE_CHARS * char_width, y), (box.x1, y)])
         ax.add_line(Line2D([x_left, x_right], [y_axes, y_axes], transform=ax.transAxes,
-                           color="black", lw=style.get("lw", 1.0), ls=style.get("ls", "-"),
-                           zorder=9))
+                           color=style.get("color", "black"), lw=style.get("lw", 1.0),
+                           ls=style.get("ls", "-"), zorder=9))
